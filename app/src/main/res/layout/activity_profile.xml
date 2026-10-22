@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:id="@+id/main"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFFFF">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="190dp">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="165dp"
+            android:background="@drawable/profile_header_bg" />
+
+<!--        <TextView-->
+<!--            android:id="@+id/btnBack"-->
+<!--            android:layout_width="48dp"-->
+<!--            android:layout_height="48dp"-->
+<!--            android:layout_gravity="top|start"-->
+<!--            android:gravity="center"-->
+<!--            android:text="‹"-->
+<!--            android:textColor="#FFFFFF"-->
+<!--            android:textSize="38sp" />-->
+
+        <TextView
+            android:id="@+id/txtProfileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:gravity="center"
+            android:text="Welcome"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/imgProfile"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@drawable/profile_circle_bg"
+            android:padding="12dp"
+            android:src="@drawable/ic_profile"
+            android:scaleType="fitCenter" />
+
+    </FrameLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="12dp">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/name_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Name"
+                    android:inputType="textPersonName" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/email_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Email"
+                    android:inputType="textEmailAddress" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/contact_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Contact"
+                    android:inputType="phone" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/carname_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Car Name / Model / Mfg Year"
+                    android:inputType="textCapWords" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/createpass_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Create Your Password"
+                    android:inputType="textPassword" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                app:cardCornerRadius="11dp"
+                app:cardElevation="8dp"
+                app:cardUseCompatPadding="true">
+
+                <EditText
+                    android:id="@+id/confirmpass_profile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:hint="Confirm Password"
+                    android:inputType="textPassword" />
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnEditProfile"
+                android:layout_width="190dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_signup_btn"
+                android:backgroundTint="@null"
+                android:text="Edit Profile"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp" />
+
+
+            <Button
+
+                android:id="@+id/profile_update"
+                android:layout_width="@dimen/_190sdp"
+                android:layout_height="@dimen/_48sdp"
+                android:layout_below="@id/btnEditProfile"
+                android:layout_marginTop="18dp"
+                android:layout_gravity="center_horizontal"
+                android:text="UPDATE PROFILE"
+                android:background="@drawable/bg_signup_btn"
+                android:backgroundTint="@null"
+                android:textColor="#FFFFFF"
+                android:textSize="@dimen/_15sdp"
+                android:visibility="gone"
+                app:backgroundTint="@null" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnChangePassword"
+                android:layout_width="190dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_signup_btn"
+                android:backgroundTint="@null"
+                android:text="Change Password"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF" />
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnlogoutProfile"
+                android:layout_width="190dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/_5sdp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_logout_btn"
+                android:backgroundTint="@null"
+                android:text="Logout"
+                android:paddingStart="@dimen/_35sdp"
+                android:paddingEnd="@dimen/_30sdp"
+                android:drawableEnd="@drawable/ic_log_out"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp" />
+
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnDeleteProfile"
+                android:layout_width="190dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/_5sdp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/bg_logout_btn"
+                android:backgroundTint="@null"
+                android:text="Delete Account"
+                android:paddingStart="@dimen/_35sdp"
+                android:paddingEnd="@dimen/_25sdp"
+                android:drawableEnd="@drawable/delete_forever_svgrepo_com"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp" />
+
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

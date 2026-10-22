@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#071006">
+
+    <ImageView
+        android:id="@+id/imgTowTruck"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="6"
+        android:src="@drawable/towtruckgetstarted"
+        android:scaleType="centerCrop"
+        android:contentDescription="Tow truck assisting a car" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="4"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:paddingStart="25dp"
+        android:paddingEnd="25dp"
+        android:paddingTop="18dp"
+        android:paddingBottom="20dp"
+        android:background="@drawable/bg_get_started">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fast Tow &amp; Roadside\nAssistance"
+            android:textColor="#FFFFFF"
+            android:textSize="29sp"
+            android:textStyle="bold"
+            android:fontFamily="sans"
+            android:lineSpacingExtra="2dp"
+            android:includeFontPadding="true" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Quickly request towing, battery jumpstarts, tire changes, or fuel delivery whenever your vehicle needs help."
+            android:textColor="#C5C9C2"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp" />
+
+        <LinearLayout
+            android:id="@+id/btnGetStarted"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginTop="22dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="5dp"
+            android:paddingEnd="18dp"
+            android:background="@drawable/bg_get_started_button"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_arrow_circle"
+                android:gravity="center"
+                android:text="➜"
+                android:textColor="#172018"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Get Started"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:fontFamily="sans-medium" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
