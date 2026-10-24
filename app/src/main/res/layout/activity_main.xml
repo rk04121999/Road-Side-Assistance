@@ -20,8 +20,8 @@
         android:layout_height="wrap_content"
         android:text="Get Started Your Car Rescue App!"
         android:layout_margin="3dp"
-        android:textSize="27sp"
-        android:textColor="@color/material_dynamic_neutral30" />
+        android:textSize="27sp"/>
+<!--        android:textColor="@color/material_dynamic_neutral30"-->
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
