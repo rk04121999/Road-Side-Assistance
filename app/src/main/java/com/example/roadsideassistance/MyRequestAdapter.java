@@ -1,11 +1,14 @@
+
 package com.example.roadsideassistance;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,184 +21,233 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.RequestViewHolder> {
 
-    private final List<DocumentSnapshot> requests;
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final Context context;
+    private final List<DocumentSnapshot> requestList;
+    private final FirebaseFirestore firestore;
 
-    public MyRequestAdapter(List<DocumentSnapshot> requests) {
-        this.requests = requests;
+    public MyRequestAdapter(Context context, List<DocumentSnapshot> requestList) {
+        this.context = context;
+        this.requestList = requestList;
+        this.firestore = FirebaseFirestore.getInstance();
     }
 
     @NonNull
     @Override
     public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_my_request, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_my_request, parent, false);
         return new RequestViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RequestViewHolder holder, int position) {
-        DocumentSnapshot request = requests.get(position);
+        DocumentSnapshot document = requestList.get(position);
 
-        String service = request.getString("serviceType");
-        String vehicle = getValue(request, "vehicleType");
-        String issue = getValue(request, "issue");
-        String location = getValue(request, "location");
-        String status = request.getString("status");
+        String requestId = document.getId();
+        String serviceType = getText(document, "serviceType", "Service not specified");
+        String vehicleType = getText(document, "vehicleType", "Not specified");
+        String issue = getText(document, "issue", "Not specified");
+        String location = getText(document, "location", "Not specified");
+        String status = getText(document, "status", "Pending");
 
-        if (service == null || service.trim().isEmpty()) {
-            service = "Service Request";
-        }
+        holder.requestService.setText(serviceType);
+        holder.requestVehicle.setText("Vehicle: " + vehicleType);
+        holder.requestIssue.setText("Issue: " + issue);
+        holder.requestLocation.setText("Location: " + location);
+        holder.requestStatus.setText(status);
+        applyStatusStyle(holder.requestStatus, status);
 
-        if (status == null || status.trim().isEmpty()) {
-            status = "Pending";
-        }
+        Object createdAt = document.get("createdAt");
 
-        holder.Service.setText(service);
-        holder.Vehicle.setText("Vehicle: " + vehicle);
-        holder.Issue.setText("Issue: " + issue);
-        holder.Location.setText("Location: " + location);
-        holder.Status.setText(status);
-
-
-        String technicianName = "";
-        String technicianPhone = "";
-        String technicianVehicle = "";
-
-        if (status.equalsIgnoreCase("Assigned")
-                || status.equalsIgnoreCase("Accepted")
-                || status.equalsIgnoreCase("In Progress")) {
-
-            technicianName = "Rahul Patel";
-            technicianPhone = "9876543210";
-            technicianVehicle = "Service Van - GJ01AB1234";
-        }
-
-        boolean technicianAssigned =
-                status.equalsIgnoreCase("Assigned")
-                        || status.equalsIgnoreCase("Accepted")
-                        || status.equalsIgnoreCase("In Progress");
-
-        holder.layoutTechnician.setVisibility(
-                technicianAssigned ? View.VISIBLE : View.GONE
-        );
-
-        if (technicianAssigned) {
-            holder.tvTechnicianName.setText("Name: " + technicianName);
-            holder.tvTechnicianPhone.setText("Phone: " + technicianPhone);
-            holder.tvTechnicianVehicle.setText("Vehicle: " + technicianVehicle);
-        }
-
-        if (status.equalsIgnoreCase("Completed")) {
-            holder.Status.setBackgroundColor(0xFF2E7D32);
-        } else if (status.equalsIgnoreCase("Accepted")
-                || status.equalsIgnoreCase("Assigned")
-                || status.equalsIgnoreCase("In Progress")) {
-            holder.Status.setBackgroundColor(0xFF1565C0);
-        } else if (status.equalsIgnoreCase("Rejected")
-                || status.equalsIgnoreCase("Cancelled")) {
-            holder.Status.setBackgroundColor(0xFFB71C1C);
-        } else {
-            holder.Status.setBackgroundResource(R.drawable.bg_service_red_gradient);
-        }
-
-        Timestamp timestamp = request.getTimestamp("createdAt");
-
-        if (timestamp != null) {
+        if (createdAt instanceof Timestamp) {
+            Date date = ((Timestamp) createdAt).toDate();
             SimpleDateFormat dateFormat =
                     new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
-            holder.Date.setText("Submitted: " + dateFormat.format(timestamp.toDate()));
+            holder.requestDate.setText("Submitted: " + dateFormat.format(date));
         } else {
-            holder.Date.setText("Submitted: Date unavailable");
+            holder.requestDate.setText("Submitted: Date unavailable");
+        }
+
+        String technicianName = document.getString("technicianName");
+        String technicianPhone = document.getString("technicianPhone");
+        String technicianVehicle = document.getString("technicianVehicle");
+
+        boolean technicianAssigned =
+                technicianName != null && !technicianName.trim().isEmpty()
+                        && technicianPhone != null && !technicianPhone.trim().isEmpty()
+                        && technicianVehicle != null && !technicianVehicle.trim().isEmpty()
+                        && !status.equalsIgnoreCase("Pending")
+                        && !status.equalsIgnoreCase("Cancelled");
+
+        if (technicianAssigned) {
+            holder.layoutTechnician.setVisibility(View.VISIBLE);
+            holder.technicianName.setText("Name: " + technicianName);
+            holder.technicianPhone.setText("Phone: " + technicianPhone);
+            holder.technicianVehicle.setText("Vehicle: " + technicianVehicle);
+        } else {
+            holder.layoutTechnician.setVisibility(View.GONE);
+            holder.technicianName.setText("");
+            holder.technicianPhone.setText("");
+            holder.technicianVehicle.setText("");
         }
 
         boolean isPending = status.equalsIgnoreCase("Pending");
 
-        holder.EditButton.setVisibility(isPending ? View.VISIBLE : View.GONE);
-        holder.CancelButton.setVisibility(isPending ? View.VISIBLE : View.GONE);
+        holder.btnEditRequest.setVisibility(isPending ? View.VISIBLE : View.GONE);
+        holder.btnCancelRequest.setVisibility(isPending ? View.VISIBLE : View.GONE);
 
-        String finalService = service;
-        holder.EditButton.setOnClickListener(v -> {
-            Intent intent = new Intent(v.getContext(), Service_Req_Activity.class);
-            intent.putExtra("requestId", request.getId());
-            intent.putExtra("serviceName", finalService);
-            intent.putExtra("vehicleType", request.getString("vehicleType"));
-            intent.putExtra("issue", request.getString("issue"));
-            intent.putExtra("location", request.getString("location"));
-            v.getContext().startActivity(intent);
+        boolean isCompleted = status.equalsIgnoreCase("Completed");
+        holder.btnGiveFeedback.setVisibility(isCompleted ? View.VISIBLE : View.GONE);
+        holder.btnGiveFeedback.setText("Give Feedback");
+        holder.btnGiveFeedback.setEnabled(false);
+
+        if (isCompleted) {
+            firestore.collection("feedback")
+                    .document(requestId)
+                    .get()
+                    .addOnSuccessListener(feedbackDocument -> {
+                        int currentPosition = holder.getBindingAdapterPosition();
+
+                        if (currentPosition == RecyclerView.NO_POSITION
+                                || !requestList.get(currentPosition).getId().equals(requestId)) {
+                            return;
+                        }
+
+                        if (feedbackDocument.exists()) {
+                            holder.btnGiveFeedback.setText("Feedback Submitted");
+                            holder.btnGiveFeedback.setEnabled(false);
+                        } else {
+                            holder.btnGiveFeedback.setText("Give Feedback");
+                            holder.btnGiveFeedback.setEnabled(true);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (holder.getBindingAdapterPosition() != RecyclerView.NO_POSITION) {
+                            holder.btnGiveFeedback.setText("Retry Feedback");
+                            holder.btnGiveFeedback.setEnabled(true);
+                        }
+                    });
+        }
+
+        holder.btnGiveFeedback.setOnClickListener(v -> {
+            Intent intent = new Intent(context, Feedback_Activity.class);
+            intent.putExtra("requestId", requestId);
+            context.startActivity(intent);
         });
 
-        holder.CancelButton.setOnClickListener(v -> {
-            new AlertDialog.Builder(v.getContext())
-                    .setTitle("Cancel Request")
-                    .setMessage("Are you sure you want to cancel this service request?")
+        holder.btnEditRequest.setOnClickListener(v -> {
+            Intent intent = new Intent(context, Service_Req_Activity.class);
+            intent.putExtra("requestId", requestId);
+            intent.putExtra("serviceName", serviceType);
+            intent.putExtra("vehicleType", vehicleType);
+            intent.putExtra("issue", issue);
+            intent.putExtra("location", location);
+            context.startActivity(intent);
+        });
+
+        holder.btnCancelRequest.setOnClickListener(v -> {
+            new AlertDialog.Builder(context)
+                    .setTitle("Cancel Service Request")
+                    .setMessage("Are you sure you want to cancel this request?")
                     .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
-                    .setPositiveButton("Yes, Cancel", (dialog, which) -> {
-                        db.collection("serviceRequests")
-                                .document(request.getId())
-                                .update(
-                                        "status", "Cancelled",
-                                        "updatedAt", FieldValue.serverTimestamp()
-                                )
-                                .addOnSuccessListener(unused ->
-                                        Toast.makeText(
-                                                v.getContext(),
-                                                "Request cancelled successfully",
-                                                Toast.LENGTH_SHORT
-                                        ).show()
-                                )
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(
-                                                v.getContext(),
-                                                "Cancellation failed: " + e.getMessage(),
-                                                Toast.LENGTH_LONG
-                                        ).show()
-                                );
-                    })
+                    .setPositiveButton("Yes, Cancel", (dialog, which) ->
+                            firestore.collection("serviceRequests")
+                                    .document(requestId)
+                                    .update(
+                                            "status", "Cancelled",
+                                            "updatedAt", FieldValue.serverTimestamp()
+                                    )
+                                    .addOnSuccessListener(unused ->
+                                            Toast.makeText(context,
+                                                    "Request cancelled successfully",
+                                                    Toast.LENGTH_SHORT).show())
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(context,
+                                                    "Unable to cancel request: " + e.getMessage(),
+                                                    Toast.LENGTH_LONG).show()))
                     .show();
         });
     }
 
-    private String getValue(DocumentSnapshot request, String field) {
-        String value = request.getString(field);
-        return value == null || value.trim().isEmpty() ? "Not provided" : value;
+    private String getText(DocumentSnapshot document, String field, String fallback) {
+        String value = document.getString(field);
+        return value == null || value.trim().isEmpty() ? fallback : value;
+    }
+
+    private void applyStatusStyle(TextView textView, String status) {
+        textView.setText(status);
+        textView.setTextColor(android.graphics.Color.WHITE);
+
+        int background;
+
+        switch (status.toLowerCase(Locale.ROOT)) {
+            case "assigned":
+            case "accepted":
+                background = android.graphics.Color.rgb(25, 135, 84);
+                break;
+            case "in progress":
+                background = android.graphics.Color.rgb(230, 126, 34);
+                break;
+            case "completed":
+                background = android.graphics.Color.rgb(46, 125, 50);
+                break;
+            case "cancelled":
+            case "rejected":
+                background = android.graphics.Color.rgb(198, 40, 40);
+                break;
+            default:
+                background = android.graphics.Color.rgb(198, 40, 40);
+                break;
+        }
+
+        textView.setBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(background));
     }
 
     @Override
     public int getItemCount() {
-        return requests.size();
+        return requestList.size();
     }
 
     static class RequestViewHolder extends RecyclerView.ViewHolder {
 
-        TextView Service, Status, Vehicle, Issue, Location, Date;
-        Button EditButton, CancelButton;
+        TextView requestService;
+        TextView requestVehicle;
+        TextView requestIssue;
+        TextView requestLocation;
+        TextView requestStatus;
+        TextView requestDate;
+        TextView technicianName;
+        TextView technicianPhone;
+        TextView technicianVehicle;
+        LinearLayout layoutTechnician;
+        Button btnEditRequest;
+        Button btnCancelRequest;
+        Button btnGiveFeedback;
 
-        View layoutTechnician;
-
-        TextView tvTechnicianName, tvTechnicianPhone, tvTechnicianVehicle;
-
-        RequestViewHolder(@NonNull View itemView) {
+        public RequestViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            Service = itemView.findViewById(R.id.RequestService);
-            Status = itemView.findViewById(R.id.RequestStatus);
-            Vehicle = itemView.findViewById(R.id.RequestVehicle);
-            Issue = itemView.findViewById(R.id.RequestIssue);
-            Location = itemView.findViewById(R.id.RequestLocation);
-            Date = itemView.findViewById(R.id.RequestDate);
-            EditButton = itemView.findViewById(R.id.btnEditRequest);
-            CancelButton = itemView.findViewById(R.id.btnCancelRequest);
-            layoutTechnician = itemView.findViewById(R.id.layoutTechnician);
-            tvTechnicianName = itemView.findViewById(R.id.tvTechnicianName);
-            tvTechnicianPhone = itemView.findViewById(R.id.tvTechnicianPhone);
-            tvTechnicianVehicle = itemView.findViewById(R.id.tvTechnicianVehicle);
+            requestService = itemView.findViewById(R.id.RequestService);
+            requestVehicle = itemView.findViewById(R.id.RequestVehicle);
+            requestIssue = itemView.findViewById(R.id.RequestIssue);
+            requestLocation = itemView.findViewById(R.id.RequestLocation);
+            requestStatus = itemView.findViewById(R.id.RequestStatus);
+            requestDate = itemView.findViewById(R.id.RequestDate);
 
+            layoutTechnician = itemView.findViewById(R.id.layoutTechnician);
+            technicianName = itemView.findViewById(R.id.tvTechnicianName);
+            technicianPhone = itemView.findViewById(R.id.tvTechnicianPhone);
+            technicianVehicle = itemView.findViewById(R.id.tvTechnicianVehicle);
+
+            btnEditRequest = itemView.findViewById(R.id.btnEditRequest);
+            btnCancelRequest = itemView.findViewById(R.id.btnCancelRequest);
+            btnGiveFeedback = itemView.findViewById(R.id.btnGiveFeedback);
         }
     }
 }

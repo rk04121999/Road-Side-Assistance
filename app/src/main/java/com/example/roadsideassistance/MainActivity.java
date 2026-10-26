@@ -14,6 +14,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MainActivity extends AppCompatActivity {
@@ -24,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
     FirebaseAuth auth;
     FirebaseFirestore db;
     SharedPreferences sp;
+
+    private static final String ADMIN_EMAIL = "admin@rsa.com";
+    private static final String TECHNICIAN_EMAIL = "technician@gmail.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,16 +58,19 @@ public class MainActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(userEmail)) {
             email.setError("Enter your email");
+            email.requestFocus();
             return;
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(userEmail).matches()) {
             email.setError("Enter a valid email");
+            email.requestFocus();
             return;
         }
 
         if (TextUtils.isEmpty(userPassword)) {
             password.setError("Enter your password");
+            password.requestFocus();
             return;
         }
 
@@ -78,40 +85,87 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    String uid = auth.getCurrentUser().getUid();
+                    FirebaseUser user = auth.getCurrentUser();
 
-                    db.collection("users").document(uid).get()
-                            .addOnSuccessListener(document -> {
-                                if (!document.exists()) {
-                                    btnLogin.setEnabled(true);
-                                    auth.signOut();
-                                    Toast.makeText(this,
-                                            "User profile not found in Firestore",
-                                            Toast.LENGTH_LONG).show();
-                                    return;
-                                }
+                    if (user == null) {
+                        btnLogin.setEnabled(true);
+                        Toast.makeText(this, "Unable to get login account",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                                sp.edit()
-                                        .putString(ConstantSp.USERID, uid)
-                                        .putString(ConstantSp.NAME, document.getString("name"))
-                                        .putString(ConstantSp.EMAIL, document.getString("email"))
-                                        .putString(ConstantSp.CONTACT, document.getString("contact"))
-                                        .putString(ConstantSp.CARNAME, document.getString("carname"))
-                                        .apply();
+                    String loginEmail = user.getEmail();
 
-                                Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                                        Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(intent);
-                                finish();
-                            })
-                            .addOnFailureListener(e -> {
-                                btnLogin.setEnabled(true);
-                                Toast.makeText(this,
-                                        "Could not load profile: " + e.getMessage(),
-                                        Toast.LENGTH_LONG).show();
-                            });
+                    if (loginEmail == null) {
+                        btnLogin.setEnabled(true);
+                        Toast.makeText(this, "Account email not found",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (loginEmail.equalsIgnoreCase(ADMIN_EMAIL)) {
+                        openRoleActivity(Admin_Requests_Activity.class);
+                        return;
+                    }
+
+                    if (loginEmail.equalsIgnoreCase(TECHNICIAN_EMAIL)) {
+                        openRoleActivity(Technician_Requests_Activity.class);
+                        return;
+                    }
+
+                    loadCustomerProfile(user);
                 });
+    }
+
+    private void loadCustomerProfile(FirebaseUser user) {
+        String uid = user.getUid();
+
+        db.collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
+                    if (!document.exists()) {
+                        btnLogin.setEnabled(true);
+                        auth.signOut();
+                        Toast.makeText(this,
+                                "User profile not found in Firestore",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    sp.edit()
+                            .putString(ConstantSp.USERID, uid)
+                            .putString(ConstantSp.NAME, document.getString("name"))
+                            .putString(ConstantSp.EMAIL, document.getString("email"))
+                            .putString(ConstantSp.CONTACT, document.getString("contact"))
+                            .putString(ConstantSp.CARNAME, document.getString("carname"))
+                            .apply();
+
+                    openRoleActivity(HomeActivity.class);
+                })
+                .addOnFailureListener(e -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
+                    btnLogin.setEnabled(true);
+
+                    Toast.makeText(this,
+                            "Could not load profile: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void openRoleActivity(Class<?> activityClass) {
+        Intent intent = new Intent(MainActivity.this, activityClass);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void resetPassword() {
@@ -125,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!Patterns.EMAIL_ADDRESS.matcher(userEmail).matches()) {
             email.setError("Enter a valid email");
+            email.requestFocus();
             return;
         }
 
@@ -145,5 +200,4 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
-
 }

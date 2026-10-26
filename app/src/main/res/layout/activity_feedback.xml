@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#F5F7F5"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Rate Your Experience"
+            android:textColor="#198754"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvFeedbackTechnician"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Technician: Loading..."
+            android:textColor="#222222"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Rate the Technician"
+            android:textColor="#222222"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <RatingBar
+            android:id="@+id/ratingTechnician"
+            style="?android:attr/ratingBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:numStars="5"
+            android:stepSize="1" />
+
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_140sdp"
+            android:elevation="@dimen/_8sdp"
+            app:cardCornerRadius="@dimen/_12sdp">
+
+
+            <EditText
+                android:id="@+id/etTechnicianFeedback"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+
+                android:background="@android:drawable/edit_text"
+                android:gravity="top|start"
+                android:hint="Write your feedback about the technician"
+                android:inputType="textCapSentences|textMultiLine" />
+
+
+        </androidx.cardview.widget.CardView>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="#DDDDDD" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Rate Our Roadside Assistance Service"
+            android:textColor="#222222"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <RatingBar
+            android:id="@+id/ratingService"
+            style="?android:attr/ratingBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:numStars="5"
+            android:stepSize="1" />
+
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_140sdp"
+            android:elevation="@dimen/_8sdp"
+            app:cardCornerRadius="@dimen/_12sdp">
+
+
+
+
+            <EditText
+
+                android:id="@+id/etServiceFeedback"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="12dp"
+                android:background="@android:drawable/edit_text"
+                android:gravity="top|start"
+                android:hint="Additional comments about our service (optional)"
+                android:inputType="textCapSentences|textMultiLine"
+                android:padding="12dp" />
+
+
+
+        </androidx.cardview.widget.CardView>
+
+
+
+
+        <Button
+            android:id="@+id/btnSubmitFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="24dp"
+            android:text="Submit Feedback"
+            android:background="@drawable/bg_login_btn"
+            app:background="@null"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+</ScrollView>

@@ -35,7 +35,7 @@
                 android:id="@+id/RequestStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_service_red_gradient"
+                android:background="@drawable/bg_req_status"
                 android:paddingLeft="@dimen/_12sdp"
                 android:paddingTop="@dimen/_7sdp"
                 android:paddingRight="@dimen/_12sdp"
@@ -156,8 +156,28 @@
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF" />
 
+
+
+
+
+
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnGiveFeedback"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#198754"
+            android:text="Give Feedback"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:visibility="gone" />
+
 
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
+
+
+
