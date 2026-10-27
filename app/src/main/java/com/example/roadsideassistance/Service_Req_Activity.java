@@ -1,10 +1,13 @@
 package com.example.roadsideassistance;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +31,10 @@ public class Service_Req_Activity extends AppCompatActivity {
     private FirebaseFirestore firestore;
     private String serviceName;
     private String requestId;
+
+    private Spinner spinnerFuelType;
+
+    private Spinner spinnerFuelQuantity;
     private boolean isEditMode = false;
 
     @Override
@@ -40,6 +47,9 @@ public class Service_Req_Activity extends AppCompatActivity {
         etServiceIssue = findViewById(R.id.etServiceIssue);
         etServiceLocation = findViewById(R.id.etServiceLocation);
         btnSubmitServiceRequest = findViewById(R.id.btnSubmitServiceRequest);
+        LinearLayout layoutFuelOptions = findViewById(R.id.layoutFuelOptions);
+        spinnerFuelType = findViewById(R.id.spinnerFuelType);
+        spinnerFuelQuantity = findViewById(R.id.spinnerFuelQuantity);
 
         firestore = FirebaseFirestore.getInstance();
 
@@ -49,6 +59,12 @@ public class Service_Req_Activity extends AppCompatActivity {
 
         if (serviceName == null || serviceName.trim().isEmpty()) {
             serviceName = "General Assistance";
+        }
+
+        if (serviceName.equalsIgnoreCase("Fuel Delivery")) {
+            layoutFuelOptions.setVisibility(View.VISIBLE);
+        } else {
+            layoutFuelOptions.setVisibility(View.GONE);
         }
 
         SelectedService.setText(serviceName);
@@ -169,6 +185,14 @@ public class Service_Req_Activity extends AppCompatActivity {
                         serviceName = "General Assistance";
                     }
 
+                    LinearLayout layoutFuelOptions = findViewById(R.id.layoutFuelOptions);
+
+                    if (serviceName != null && serviceName.equalsIgnoreCase("Fuel Delivery")) {
+                        layoutFuelOptions.setVisibility(View.VISIBLE);
+                    } else {
+                        layoutFuelOptions.setVisibility(View.GONE);
+                    }
+
                     SelectedService.setText(serviceName);
 
                     setupDropdown(etServiceIssue, getIssues(serviceName));
@@ -240,6 +264,24 @@ public class Service_Req_Activity extends AppCompatActivity {
         request.put("issue", issue);
         request.put("location", location);
         request.put("updatedAt", FieldValue.serverTimestamp());
+
+        if ("Fuel Delivery".equalsIgnoreCase(serviceName)) {
+            if (spinnerFuelType.getSelectedItemPosition() == 0) {
+                Toast.makeText(this, "Please select fuel type", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (spinnerFuelQuantity.getSelectedItemPosition() == 0) {
+                Toast.makeText(this, "Please select fuel quantity", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            request.put("fuelType", spinnerFuelType.getSelectedItem().toString());
+            request.put("fuelQuantity", spinnerFuelQuantity.getSelectedItem().toString());
+        } else {
+            request.put("fuelType", FieldValue.delete());
+            request.put("fuelQuantity", FieldValue.delete());
+        }
 
         if (isEditMode) {
             firestore.collection("serviceRequests")

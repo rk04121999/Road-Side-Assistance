@@ -65,6 +65,27 @@
             android:textColor="#444444"
             android:textSize="15sp" />
 
+
+        <TextView
+            android:id="@+id/tvFuelType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_8sdp"
+            android:textColor="#444444"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvFuelQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_8sdp"
+            android:textColor="#444444"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+
+
         <TextView
             android:id="@+id/RequestLocation"
             android:layout_width="match_parent"
@@ -148,7 +169,7 @@
             <Button
                 android:id="@+id/btnCancelRequest"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/_8sdp"
                 android:layout_weight="1"
                 android:backgroundTint="#C62828"

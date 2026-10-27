@@ -31,6 +31,10 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
     private final List<DocumentSnapshot> requestList;
     private final FirebaseFirestore firestore;
 
+
+
+
+
     public MyRequestAdapter(Context context, List<DocumentSnapshot> requestList) {
         this.context = context;
         this.requestList = requestList;
@@ -54,6 +58,26 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         String issue = getText(document, "issue", "Not specified");
         String location = getText(document, "location", "Not specified");
         String status = getText(document, "status", "Pending");
+
+        String fuelType = document.getString("fuelType");
+        String fuelQuantity = document.getString("fuelQuantity");
+
+        if ("Fuel Delivery".equalsIgnoreCase(serviceType)
+                && fuelType != null
+                && !fuelType.trim().isEmpty()
+                && fuelQuantity != null
+                && !fuelQuantity.trim().isEmpty()) {
+
+            holder.tvFuelType.setText("Fuel Type: " + fuelType);
+            holder.tvFuelQuantity.setText("Quantity: " + fuelQuantity);
+
+            holder.tvFuelType.setVisibility(View.VISIBLE);
+            holder.tvFuelQuantity.setVisibility(View.VISIBLE);
+
+        } else {
+            holder.tvFuelType.setVisibility(View.GONE);
+            holder.tvFuelQuantity.setVisibility(View.GONE);
+        }
 
         holder.requestService.setText(serviceType);
         holder.requestVehicle.setText("Vehicle: " + vehicleType);
@@ -225,6 +249,9 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         TextView technicianName;
         TextView technicianPhone;
         TextView technicianVehicle;
+
+        TextView tvFuelType;
+        TextView tvFuelQuantity;
         LinearLayout layoutTechnician;
         Button btnEditRequest;
         Button btnCancelRequest;
@@ -239,6 +266,8 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             requestLocation = itemView.findViewById(R.id.RequestLocation);
             requestStatus = itemView.findViewById(R.id.RequestStatus);
             requestDate = itemView.findViewById(R.id.RequestDate);
+            tvFuelType = itemView.findViewById(R.id.tvFuelType);
+            tvFuelQuantity = itemView.findViewById(R.id.tvFuelQuantity);
 
             layoutTechnician = itemView.findViewById(R.id.layoutTechnician);
             technicianName = itemView.findViewById(R.id.tvTechnicianName);

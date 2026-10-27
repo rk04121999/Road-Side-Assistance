@@ -9,10 +9,10 @@
 
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="@dimen/_45sdp"
         android:background="@drawable/bg_service_red_gradient"
         android:gravity="center"
-        android:layout_marginTop="@dimen/_35sdp"
+        android:layout_marginTop="@dimen/_15sdp"
         android:text="My Requests"
         android:textColor="#FFFFFF"
         android:textSize="23sp"
@@ -22,7 +22,7 @@
         android:id="@+id/tvRequestsMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/_15sdp"
+        android:layout_marginTop="@dimen/_6sdp"
         android:gravity="center"
         android:padding="@dimen/_12sdp"
         android:text="Loading your requests..."

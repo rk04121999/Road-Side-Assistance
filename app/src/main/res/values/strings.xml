@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">Road Side Assistance</string>
+
+    <string-array name="fuel_types">
+        <item>Select Fuel type</item>
+        <item>Petrol</item>
+        <item>Diesel</item>
+    </string-array>
+
+
+    <string-array name="fuel_quantities">
+        <item>Select Quantity</item>
+        <item>1 Liter</item>
+        <item>2 Liters</item>
+        <item>5 Liters</item>
+        <item>7 Liters</item>
+        <item>10 Liters</item>
+    </string-array>
 </resources>
