@@ -22,22 +22,65 @@
         android:id="@+id/spinnerRequestStatus"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:layout_marginTop="@dimen/_12sdp"
+        android:layout_marginTop="12dp"
         android:background="#FFFFFF"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         android:spinnerMode="dropdown" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnFromDate"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:backgroundTint="#198754"
+            android:text="From Date"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btnToDate"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:backgroundTint="#198754"
+            android:text="To Date"
+            android:textAllCaps="false"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnClearDateFilter"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:backgroundTint="#555555"
+        android:text="Clear Date Filter"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF" />
+
     <TextView
         android:id="@+id/tvRequestsMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/_6sdp"
+        android:layout_marginTop="6dp"
         android:gravity="center"
-        android:padding="@dimen/_12sdp"
+        android:padding="10dp"
         android:text="Loading your requests..."
         android:textColor="#555555"
-        android:textSize="15sp" />
+        android:textSize="14sp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerMyRequests"
@@ -45,7 +88,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="@dimen/_8sdp"
+        android:paddingTop="8dp"
         android:paddingBottom="8dp" />
 
 </LinearLayout>
