@@ -4,6 +4,8 @@ package com.example.roadsideassistance;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,18 +23,32 @@ import com.google.firebase.firestore.ListenerRegistration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class My_Requests_Activity extends AppCompatActivity {
 
     private RecyclerView recyclerMyRequests;
     private TextView tvRequestsMessage;
+    private Spinner spinnerRequestStatus;
+    private FirebaseFirestore firestore;
     private MyRequestAdapter adapter;
+    private final List<DocumentSnapshot> allRequests = new ArrayList<>();
     private final List<DocumentSnapshot> requestList = new ArrayList<>();
     private final Map<String, String> lastStatuses = new HashMap<>();
-    private FirebaseFirestore firestore;
-    private ListenerRegistration requestsListener;
-    private boolean initialSnapshotLoaded = false;
+    private ListenerRegistration requestListener;
+    private String selectedStatus = "All";
+
+    private final String[] statusOptions = {
+            "All",
+            "Pending",
+            "Assigned",
+            "Accepted",
+            "In Progress",
+            "Completed",
+            "Cancelled",
+            "Rejected"
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,55 +57,73 @@ public class My_Requests_Activity extends AppCompatActivity {
 
         recyclerMyRequests = findViewById(R.id.recyclerMyRequests);
         tvRequestsMessage = findViewById(R.id.tvRequestsMessage);
+        spinnerRequestStatus = findViewById(R.id.spinnerRequestStatus);
 
         firestore = FirebaseFirestore.getInstance();
 
         recyclerMyRequests.setLayoutManager(new LinearLayoutManager(this));
         adapter = new MyRequestAdapter(this, requestList);
         recyclerMyRequests.setAdapter(adapter);
+
+        ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                statusOptions
+        );
+        statusAdapter.setDropDownViewResource(
+                android.R.layout.simple_spinner_dropdown_item
+        );
+        spinnerRequestStatus.setAdapter(statusAdapter);
+
+        spinnerRequestStatus.setOnItemSelectedListener(
+                new android.widget.AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(
+                            android.widget.AdapterView<?> parent,
+                            View view,
+                            int position,
+                            long id
+                    ) {
+                        selectedStatus = statusOptions[position];
+                        applyStatusFilter();
+                    }
+
+                    @Override
+                    public void onNothingSelected(
+                            android.widget.AdapterView<?> parent
+                    ) {
+                    }
+                }
+        );
+
+        loadRequests();
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        loadMyRequests();
-    }
-
-    private void loadMyRequests() {
+    private void loadRequests() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user == null) {
+            tvRequestsMessage.setText("Please log in to view your requests.");
             tvRequestsMessage.setVisibility(View.VISIBLE);
-            tvRequestsMessage.setText("Please log in to view your requests");
             recyclerMyRequests.setVisibility(View.GONE);
             return;
         }
 
-        if (requestsListener != null) {
-            requestsListener.remove();
-        }
-
-        initialSnapshotLoaded = false;
-        lastStatuses.clear();
-
-        tvRequestsMessage.setVisibility(View.VISIBLE);
         tvRequestsMessage.setText("Loading your requests...");
+        tvRequestsMessage.setVisibility(View.VISIBLE);
 
-        requestsListener = firestore.collection("serviceRequests")
+        requestListener = firestore.collection("serviceRequests")
                 .whereEqualTo("userId", user.getUid())
                 .addSnapshotListener((snapshot, error) -> {
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-
                     if (error != null) {
+                        tvRequestsMessage.setText(
+                                "Unable to load requests. Please check your connection or Firebase permissions."
+                        );
                         tvRequestsMessage.setVisibility(View.VISIBLE);
-                        tvRequestsMessage.setText("Unable to load requests");
                         recyclerMyRequests.setVisibility(View.GONE);
-
                         Toast.makeText(
-                                this,
-                                "Error loading requests: " + error.getMessage(),
+                                My_Requests_Activity.this,
+                                "Failed to load requests: " + error.getMessage(),
                                 Toast.LENGTH_LONG
                         ).show();
                         return;
@@ -99,67 +133,90 @@ public class My_Requests_Activity extends AppCompatActivity {
                         return;
                     }
 
-                    String requestToReview = null;
-
                     for (DocumentChange change : snapshot.getDocumentChanges()) {
                         DocumentSnapshot document = change.getDocument();
                         String requestId = document.getId();
-                        String status = document.getString("status");
+                        String newStatus = document.getString("status");
 
-                        if (status == null) {
-                            status = "Pending";
-                        }
+                        if (change.getType() == DocumentChange.Type.MODIFIED) {
+                            String oldStatus = lastStatuses.get(requestId);
 
-                        String previousStatus = lastStatuses.put(requestId, status);
+                            if (newStatus != null
+                                    && oldStatus != null
+                                    && !oldStatus.equalsIgnoreCase(newStatus)) {
 
-                        if (initialSnapshotLoaded
-                                && change.getType() == DocumentChange.Type.MODIFIED
-                                && previousStatus != null
-                                && !previousStatus.equalsIgnoreCase(status)) {
+                                Toast.makeText(
+                                        My_Requests_Activity.this,
+                                        "Request status updated: " + newStatus,
+                                        Toast.LENGTH_LONG
+                                ).show();
 
-                            Toast.makeText(
-                                    this,
-                                    "Request status updated: " + status,
-                                    Toast.LENGTH_LONG
-                            ).show();
-
-                            if ("Completed".equalsIgnoreCase(status)
-                                    && !"Completed".equalsIgnoreCase(previousStatus)) {
-                                requestToReview = requestId;
+                                if (newStatus.equalsIgnoreCase("Completed")) {
+                                    Intent intent = new Intent(
+                                            My_Requests_Activity.this,
+                                            Feedback_Activity.class
+                                    );
+                                    intent.putExtra("requestId", requestId);
+                                    startActivity(intent);
+                                }
                             }
                         }
+
+                        if (newStatus != null) {
+                            lastStatuses.put(requestId, newStatus);
+                        }
                     }
 
-                    initialSnapshotLoaded = true;
+                    allRequests.clear();
+                    allRequests.addAll(snapshot.getDocuments());
 
-                    requestList.clear();
-                    requestList.addAll(snapshot.getDocuments());
-                    adapter.notifyDataSetChanged();
-
-                    if (requestList.isEmpty()) {
-                        tvRequestsMessage.setVisibility(View.VISIBLE);
-                        tvRequestsMessage.setText("You have no service requests yet");
-                        recyclerMyRequests.setVisibility(View.GONE);
-                    } else {
-                        tvRequestsMessage.setVisibility(View.GONE);
-                        recyclerMyRequests.setVisibility(View.VISIBLE);
-                    }
-
-                    if (requestToReview != null) {
-                        Intent intent = new Intent(this, Feedback_Activity.class);
-                        intent.putExtra("requestId", requestToReview);
-                        startActivity(intent);
-                    }
+                    applyStatusFilter();
                 });
+    }
+
+    private void applyStatusFilter() {
+        requestList.clear();
+
+        for (DocumentSnapshot document : allRequests) {
+            String status = document.getString("status");
+
+            if (selectedStatus.equalsIgnoreCase("All")
+                    || (status != null
+                    && status.trim().equalsIgnoreCase(selectedStatus))) {
+                requestList.add(document);
+            }
+        }
+
+        adapter.notifyDataSetChanged();
+
+        if (allRequests.isEmpty()) {
+            tvRequestsMessage.setText("You have not submitted any service requests yet.");
+            tvRequestsMessage.setVisibility(View.VISIBLE);
+            recyclerMyRequests.setVisibility(View.GONE);
+        } else if (requestList.isEmpty()) {
+            tvRequestsMessage.setText(
+                    "No requests found with status: " + selectedStatus
+            );
+            tvRequestsMessage.setVisibility(View.VISIBLE);
+            recyclerMyRequests.setVisibility(View.GONE);
+        } else {
+            tvRequestsMessage.setText(
+                    requestList.size() + (requestList.size() == 1
+                            ? " request found"
+                            : " requests found")
+            );
+            tvRequestsMessage.setVisibility(View.VISIBLE);
+            recyclerMyRequests.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
     protected void onStop() {
-        if (requestsListener != null) {
-            requestsListener.remove();
-            requestsListener = null;
-        }
-
         super.onStop();
+
+        if (requestListener != null) {
+            requestListener.remove();
+            requestListener = null;
+        }
     }
 }
