@@ -59,6 +59,26 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         String location = getText(document, "location", "Not specified");
         String status = getText(document, "status", "Pending");
 
+        Object priceValue = document.get("estimatedPrice");
+
+        if (priceValue instanceof Number) {
+            double price = ((Number) priceValue).doubleValue();
+
+            if (price == Math.floor(price)) {
+                holder.tvEstimatedPrice.setText(
+                        String.format(Locale.getDefault(),
+                                "Estimated Price: ₹%.0f", price)
+                );
+            } else {
+                holder.tvEstimatedPrice.setText(
+                        String.format(Locale.getDefault(),
+                                "Estimated Price: ₹%.2f", price)
+                );
+            }
+        } else {
+            holder.tvEstimatedPrice.setText("Estimated Price: Not available");
+        }
+
         String fuelType = document.getString("fuelType");
         String fuelQuantity = document.getString("fuelQuantity");
 
@@ -246,6 +266,8 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         TextView requestLocation;
         TextView requestStatus;
         TextView requestDate;
+
+        TextView tvEstimatedPrice;
         TextView technicianName;
         TextView technicianPhone;
         TextView technicianVehicle;
@@ -268,6 +290,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             requestDate = itemView.findViewById(R.id.RequestDate);
             tvFuelType = itemView.findViewById(R.id.tvFuelType);
             tvFuelQuantity = itemView.findViewById(R.id.tvFuelQuantity);
+            tvEstimatedPrice = itemView.findViewById(R.id.tvEstimatedPrice);
 
             layoutTechnician = itemView.findViewById(R.id.layoutTechnician);
             technicianName = itemView.findViewById(R.id.tvTechnicianName);
