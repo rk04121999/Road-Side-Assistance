@@ -1,4 +1,3 @@
-
 package com.example.roadsideassistance;
 
 import android.app.AlertDialog;
@@ -31,10 +30,6 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
     private final List<DocumentSnapshot> requestList;
     private final FirebaseFirestore firestore;
 
-
-
-
-
     public MyRequestAdapter(Context context, List<DocumentSnapshot> requestList) {
         this.context = context;
         this.requestList = requestList;
@@ -58,6 +53,8 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         String issue = getText(document, "issue", "Not specified");
         String location = getText(document, "location", "Not specified");
         String status = getText(document, "status", "Pending");
+        String fuelType = document.getString("fuelType");
+        String fuelQuantity = document.getString("fuelQuantity");
 
         Object priceValue = document.get("estimatedPrice");
 
@@ -66,31 +63,23 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
 
             if (price == Math.floor(price)) {
                 holder.tvEstimatedPrice.setText(
-                        String.format(Locale.getDefault(),
-                                "Estimated Price: ₹%.0f", price)
+                        String.format(Locale.getDefault(), "Estimated Price: ₹%.0f", price)
                 );
             } else {
                 holder.tvEstimatedPrice.setText(
-                        String.format(Locale.getDefault(),
-                                "Estimated Price: ₹%.2f", price)
+                        String.format(Locale.getDefault(), "Estimated Price: ₹%.2f", price)
                 );
             }
         } else {
             holder.tvEstimatedPrice.setText("Estimated Price: Not available");
         }
 
-        String fuelType = document.getString("fuelType");
-        String fuelQuantity = document.getString("fuelQuantity");
-
         if ("Fuel Delivery".equalsIgnoreCase(serviceType)
-                && fuelType != null
-                && !fuelType.trim().isEmpty()
-                && fuelQuantity != null
-                && !fuelQuantity.trim().isEmpty()) {
+                && fuelType != null && !fuelType.trim().isEmpty()
+                && fuelQuantity != null && !fuelQuantity.trim().isEmpty()) {
 
             holder.tvFuelType.setText("Fuel Type: " + fuelType);
             holder.tvFuelQuantity.setText("Quantity: " + fuelQuantity);
-
             holder.tvFuelType.setVisibility(View.VISIBLE);
             holder.tvFuelQuantity.setVisibility(View.VISIBLE);
 
@@ -144,6 +133,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
 
         holder.btnEditRequest.setVisibility(isPending ? View.VISIBLE : View.GONE);
         holder.btnCancelRequest.setVisibility(isPending ? View.VISIBLE : View.GONE);
+        holder.btnRequestAgain.setVisibility(View.VISIBLE);
 
         boolean isCompleted = status.equalsIgnoreCase("Completed");
         holder.btnGiveFeedback.setVisibility(isCompleted ? View.VISIBLE : View.GONE);
@@ -191,6 +181,18 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             intent.putExtra("vehicleType", vehicleType);
             intent.putExtra("issue", issue);
             intent.putExtra("location", location);
+            context.startActivity(intent);
+        });
+
+        holder.btnRequestAgain.setOnClickListener(v -> {
+            Intent intent = new Intent(context, Service_Req_Activity.class);
+            intent.putExtra("requestAgain", true);
+            intent.putExtra("serviceName", serviceType);
+            intent.putExtra("againVehicleType", vehicleType);
+            intent.putExtra("againIssue", issue);
+            intent.putExtra("againLocation", location);
+            intent.putExtra("againFuelType", fuelType == null ? "" : fuelType);
+            intent.putExtra("againFuelQuantity", fuelQuantity == null ? "" : fuelQuantity);
             context.startActivity(intent);
         });
 
@@ -266,18 +268,17 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         TextView requestLocation;
         TextView requestStatus;
         TextView requestDate;
-
         TextView tvEstimatedPrice;
         TextView technicianName;
         TextView technicianPhone;
         TextView technicianVehicle;
-
         TextView tvFuelType;
         TextView tvFuelQuantity;
         LinearLayout layoutTechnician;
         Button btnEditRequest;
         Button btnCancelRequest;
         Button btnGiveFeedback;
+        Button btnRequestAgain;
 
         public RequestViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -300,6 +301,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             btnEditRequest = itemView.findViewById(R.id.btnEditRequest);
             btnCancelRequest = itemView.findViewById(R.id.btnCancelRequest);
             btnGiveFeedback = itemView.findViewById(R.id.btnGiveFeedback);
+            btnRequestAgain = itemView.findViewById(R.id.btnRequestAgain);
         }
     }
 }

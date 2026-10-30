@@ -67,6 +67,8 @@ public class Profile_Activity extends AppCompatActivity {
         createpassword.setVisibility(View.GONE);
         confirmpassword.setVisibility(View.GONE);
 
+        txtProfileName.setText("Welcome");
+
         setEditMode(false);
         loadProfile();
 
@@ -96,10 +98,13 @@ public class Profile_Activity extends AppCompatActivity {
                     contact.setText(userContact == null ? "" : userContact);
                     carname.setText(userCar == null ? "" : userCar);
 
-                    txtProfileName.setText(
-                            userName == null || userName.isEmpty()
-                                    ? "My Profile" : userName
-                    );
+                    String displayName = userName == null ? "" : userName.trim();
+
+                    if (displayName.isEmpty()) {
+                        txtProfileName.setText("Welcome");
+                    } else {
+                        txtProfileName.setText("Welcome " + displayName);
+                    }
 
                     sp.edit()
                             .putString(ConstantSp.USERID, uid)
@@ -132,6 +137,7 @@ public class Profile_Activity extends AppCompatActivity {
         btnChangePassword.setVisibility(enabled ? View.GONE : View.VISIBLE);
 
         confirmpassword.setText("");
+        confirmpassword.setError(null);
 
         if (enabled) {
             confirmpassword.setHint("Enter Current Password");
@@ -207,7 +213,8 @@ public class Profile_Activity extends AppCompatActivity {
                             .putString(ConstantSp.CARNAME, userCar)
                             .apply();
 
-                    txtProfileName.setText(userName);
+                    txtProfileName.setText("Welcome " + userName.trim());
+
                     profileUpdate.setEnabled(true);
                     setEditMode(false);
 
@@ -376,25 +383,30 @@ public class Profile_Activity extends AppCompatActivity {
                                         currentUser.delete()
                                                 .addOnSuccessListener(result -> {
                                                     sp.edit().clear().apply();
+
                                                     Toast.makeText(this,
                                                             "Account deleted successfully",
                                                             Toast.LENGTH_SHORT).show();
+
                                                     goToLogin();
                                                 })
                                                 .addOnFailureListener(e -> {
                                                     btnDeleteProfile.setEnabled(true);
+
                                                     Toast.makeText(this,
                                                             "Profile deleted, but account deletion failed. Sign in again and retry.",
                                                             Toast.LENGTH_LONG).show();
                                                 }))
                                 .addOnFailureListener(e -> {
                                     btnDeleteProfile.setEnabled(true);
+
                                     Toast.makeText(this,
                                             "Could not delete profile: " + e.getMessage(),
                                             Toast.LENGTH_LONG).show();
                                 }))
                 .addOnFailureListener(e -> {
                     btnDeleteProfile.setEnabled(true);
+
                     Toast.makeText(this,
                             "Password verification failed. Account was not deleted.",
                             Toast.LENGTH_LONG).show();
@@ -410,5 +422,4 @@ public class Profile_Activity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
 }

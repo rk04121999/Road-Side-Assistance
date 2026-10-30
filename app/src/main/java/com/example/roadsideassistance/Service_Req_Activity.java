@@ -37,6 +37,7 @@ public class Service_Req_Activity extends AppCompatActivity {
     private String requestId;
     private Spinner spinnerFuelType, spinnerFuelQuantity;
     private boolean isEditMode = false;
+    private boolean isRequestAgain = false;
     private double estimatedPrice = 0;
 
     private static final double FUEL_DELIVERY_FEE = 150;
@@ -63,6 +64,7 @@ public class Service_Req_Activity extends AppCompatActivity {
 
         serviceName = getIntent().getStringExtra("serviceName");
         requestId = getIntent().getStringExtra("requestId");
+        isRequestAgain = getIntent().getBooleanExtra("requestAgain", false);
         isEditMode = requestId != null && !requestId.trim().isEmpty();
 
         if (serviceName == null || serviceName.trim().isEmpty()) {
@@ -118,6 +120,10 @@ public class Service_Req_Activity extends AppCompatActivity {
         spinnerFuelType.setOnItemSelectedListener(fuelSelectionListener);
         spinnerFuelQuantity.setOnItemSelectedListener(fuelSelectionListener);
 
+        if (isRequestAgain && !isEditMode) {
+            prefillRequestAgain();
+        }
+
         updateEstimatedPrice();
 
         if (isEditMode) {
@@ -128,6 +134,23 @@ public class Service_Req_Activity extends AppCompatActivity {
         }
 
         btnSubmitServiceRequest.setOnClickListener(v -> submitRequest());
+    }
+
+    private void prefillRequestAgain() {
+        String vehicle = getIntent().getStringExtra("againVehicleType");
+        String issue = getIntent().getStringExtra("againIssue");
+        String location = getIntent().getStringExtra("againLocation");
+        String fuelType = getIntent().getStringExtra("againFuelType");
+        String fuelQuantity = getIntent().getStringExtra("againFuelQuantity");
+
+        etVehicleType.setText(vehicle == null ? "" : vehicle, false);
+        etServiceIssue.setText(issue == null ? "" : issue, false);
+        etServiceLocation.setText(location == null ? "" : location);
+
+        if ("Fuel Delivery".equalsIgnoreCase(serviceName)) {
+            selectSpinnerItem(spinnerFuelType, fuelType);
+            selectSpinnerItem(spinnerFuelQuantity, fuelQuantity);
+        }
     }
 
     private void setupDropdown(
@@ -336,7 +359,8 @@ public class Service_Req_Activity extends AppCompatActivity {
     }
 
     private void selectSpinnerItem(Spinner spinner, String value) {
-        if (value == null || spinner.getAdapter() == null) {
+        if (value == null || value.trim().isEmpty()
+                || spinner.getAdapter() == null) {
             return;
         }
 

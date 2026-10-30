@@ -41,16 +41,16 @@ public class HomeActivity extends AppCompatActivity {
 
         List<GarageServiceAdapter.GarageService> garageList = new ArrayList<>();
 
-        garageList.add(new GarageServiceAdapter.GarageService(
-                "Auto Garage Towing",
-                "Gandhinager Sec-24",
-                "9999999999",
-                "Replace with your real garage address"
-        ));
+//        garageList.add(new GarageServiceAdapter.GarageService(
+//                "Auto Garage Towing",
+//                "Gandhinager Sec-24",
+//                "9999999999",
+//                "Replace with your real garage address"
+//        ));
 
         garageList.add(new GarageServiceAdapter.GarageService(
                 "Rk Tow Service",
-                "Mirzapur Ahmedabad",
+                "Mirzapur, Ahmedabad.",
                 "7687877889",
                 "Replace with your real towing service address"
         ));
@@ -58,7 +58,7 @@ public class HomeActivity extends AppCompatActivity {
 
         garageList.add(new GarageServiceAdapter.GarageService(
                 "Towing Expert",
-                "C.G Road Ahmedabad",
+                "C.G Road, Ahmedabad.",
                 "7687987989",
                 "Replace with your real towing service address"
         ));
