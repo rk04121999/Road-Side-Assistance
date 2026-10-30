@@ -1,8 +1,10 @@
+
 package com.example.roadsideassistance;
 
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -122,12 +124,28 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             holder.technicianName.setText("Name: " + technicianName);
             holder.technicianPhone.setText("Phone: " + technicianPhone);
             holder.technicianVehicle.setText("Vehicle: " + technicianVehicle);
+            holder.btnCallTechnician.setVisibility(View.VISIBLE);
         } else {
             holder.layoutTechnician.setVisibility(View.GONE);
             holder.technicianName.setText("");
             holder.technicianPhone.setText("");
             holder.technicianVehicle.setText("");
+            holder.btnCallTechnician.setVisibility(View.GONE);
         }
+
+        holder.btnCallTechnician.setOnClickListener(v -> {
+            if (technicianPhone != null && !technicianPhone.trim().isEmpty()) {
+                Intent callIntent = new Intent(
+                        Intent.ACTION_DIAL,
+                        Uri.parse("tel:" + Uri.encode(technicianPhone.trim()))
+                );
+
+                context.startActivity(callIntent);
+            } else {
+                Toast.makeText(context, "Technician phone number unavailable",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
 
         boolean isPending = status.equalsIgnoreCase("Pending");
 
@@ -279,6 +297,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         Button btnCancelRequest;
         Button btnGiveFeedback;
         Button btnRequestAgain;
+        Button btnCallTechnician;
 
         public RequestViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -302,6 +321,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             btnCancelRequest = itemView.findViewById(R.id.btnCancelRequest);
             btnGiveFeedback = itemView.findViewById(R.id.btnGiveFeedback);
             btnRequestAgain = itemView.findViewById(R.id.btnRequestAgain);
+            btnCallTechnician = itemView.findViewById(R.id.btnCallTechnician);
         }
     }
 }

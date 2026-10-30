@@ -154,6 +154,19 @@
                 android:textColor="#222222"
                 android:textSize="14sp" />
 
+            <Button
+                android:id="@+id/btnCallTechnician"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="@dimen/_10sdp"
+                android:backgroundTint="#198754"
+                android:text="Call Now"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -196,7 +209,6 @@
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:visibility="gone" />
-
 
         <Button
             android:id="@+id/btnRequestAgain"
