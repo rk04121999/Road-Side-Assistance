@@ -129,6 +129,12 @@
                 android:orientation="horizontal"
                 android:overScrollMode="never" />
 
+            <Button
+                android:id="@+id/btnAvailableMechanics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Available Mechanics"
+                android:textAllCaps="false" />
 
         </LinearLayout>
 
@@ -147,6 +153,8 @@
         app:labelVisibilityMode="labeled"
         app:itemHorizontalTranslationEnabled="false"
         app:menu="@menu/bottom_nav_menu" />
+
+
 
 
 </LinearLayout>

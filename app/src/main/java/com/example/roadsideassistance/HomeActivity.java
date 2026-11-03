@@ -2,6 +2,7 @@ package com.example.roadsideassistance;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,6 +36,14 @@ public class HomeActivity extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
+        });
+
+
+        Button btnAvailableMechanics = findViewById(R.id.btnAvailableMechanics);
+
+        btnAvailableMechanics.setOnClickListener(v -> {
+            Intent intent = new Intent(HomeActivity.this, Mechanics_Activity.class);
+            startActivity(intent);
         });
 
         rvGarageServices = findViewById(R.id.rvGarageServices);
