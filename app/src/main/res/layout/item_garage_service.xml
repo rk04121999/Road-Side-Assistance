@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
     app:cardCornerRadius="14dp"
-    android:fitsSystemWindows="true"
     app:cardElevation="4dp"
     app:cardUseCompatPadding="true">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="148dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="12dp">
 
@@ -38,37 +38,40 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:layout_marginBottom="10dp"
             android:textColor="?android:attr/textColorSecondary"
-            android:textSize="13sp"
-            android:layout_marginBottom="@dimen/_5sdp"
-            />
+            android:textSize="13sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="43dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <Button
                 android:id="@+id/btnGarageCall"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_weight="2"
+                android:layout_height="45dp"
+                android:layout_weight="1"
                 android:background="@drawable/bg_login_btn"
                 android:text="Call"
-                android:textAllCaps="false" />
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="@null" />
 
             <Button
                 android:id="@+id/btnGarageNavigate"
-                android:layout_width="wrap_content"
-                android:layout_height="42dp"
-                android:layout_gravity="center_horizontal"
+                android:layout_width="0dp"
+                android:layout_height="45dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_signup_btn"
                 android:text="Navigate"
+                android:textStyle="bold"
                 android:textAllCaps="false"
-                app:background="@null" />
+                android:textColor="#FFFFFF"
+                app:backgroundTint="@null" />
 
         </LinearLayout>
 

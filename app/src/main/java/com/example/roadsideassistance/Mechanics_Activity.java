@@ -1,9 +1,10 @@
 package com.example.roadsideassistance;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,18 +16,26 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Mechanics_Activity extends AppCompatActivity {
 
     private RecyclerView recyclerMechanics;
     private TextView tvMechanicsMessage;
+    private Button btnViewFavorites;
 
     private FirebaseFirestore db;
     private ListenerRegistration mechanicListener;
+    private ListenerRegistration favoriteListener;
+
     private MechanicAdapter adapter;
 
     private final List<Mechanic> mechanicList = new ArrayList<>();
+    private final Set<String> favoriteIds = new HashSet<>();
+
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,22 +44,37 @@ public class Mechanics_Activity extends AppCompatActivity {
 
         recyclerMechanics = findViewById(R.id.recyclerMechanics);
         tvMechanicsMessage = findViewById(R.id.tvMechanicsMessage);
+        btnViewFavorites = findViewById(R.id.btnViewFavorites);
 
         db = FirebaseFirestore.getInstance();
 
-        recyclerMechanics.setLayoutManager(
-                new LinearLayoutManager(this)
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
+
+        recyclerMechanics.setLayoutManager(new LinearLayoutManager(this));
+
+        adapter = new MechanicAdapter(
+                this,
+                mechanicList,
+                favoriteIds,
+                db,
+                userId
         );
 
-        adapter = new MechanicAdapter(this, mechanicList);
         recyclerMechanics.setAdapter(adapter);
 
+        btnViewFavorites.setOnClickListener(v -> {
+            startActivity(new Intent(Mechanics_Activity.this, Favorites_Activity.class));
+        });
+
         loadMechanics();
+        loadFavoriteIds();
     }
 
     private void loadMechanics() {
 
-        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+        if (userId == null) {
             showStaticMechanics("Please log in to view mechanics.");
             return;
         }
@@ -67,9 +91,7 @@ public class Mechanics_Activity extends AppCompatActivity {
                     }
 
                     if (error != null) {
-                        showStaticMechanics(
-                                "Firebase unavailable. Showing demo mechanics."
-                        );
+                        showStaticMechanics("Firebase unavailable. Showing demo mechanics.");
                         return;
                     }
 
@@ -114,15 +136,43 @@ public class Mechanics_Activity extends AppCompatActivity {
                     adapter.notifyDataSetChanged();
 
                     if (mechanicList.isEmpty()) {
-                        showStaticMechanics(
-                                "No mechanics found in Firebase. Showing demo mechanics."
-                        );
+                        tvMechanicsMessage.setText("No available mechanics found.");
                     } else {
                         tvMechanicsMessage.setText(
                                 mechanicList.size() + " available mechanics found"
                         );
-                        tvMechanicsMessage.setVisibility(View.VISIBLE);
                     }
+
+                    tvMechanicsMessage.setVisibility(View.VISIBLE);
+                });
+    }
+
+    private void loadFavoriteIds() {
+
+        if (userId == null) {
+            return;
+        }
+
+        favoriteListener = db.collection("users")
+                .document(userId)
+                .collection("favoriteMechanics")
+                .addSnapshotListener((snapshot, error) -> {
+
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
+                    if (error != null || snapshot == null) {
+                        return;
+                    }
+
+                    favoriteIds.clear();
+
+                    for (DocumentSnapshot document : snapshot.getDocuments()) {
+                        favoriteIds.add(document.getId());
+                    }
+
+                    adapter.notifyDataSetChanged();
                 });
     }
 
@@ -137,7 +187,7 @@ public class Mechanics_Activity extends AppCompatActivity {
                 "Car Repair",
                 "5 years",
                 "Mobile Service Van",
-                4.8,
+                4.7,
                 true
         ));
 
@@ -148,7 +198,7 @@ public class Mechanics_Activity extends AppCompatActivity {
                 "Battery & Electrical",
                 "4 years",
                 "Service Bike",
-                4.5,
+                4.3,
                 true
         ));
 
@@ -165,8 +215,8 @@ public class Mechanics_Activity extends AppCompatActivity {
 
         mechanicList.add(new Mechanic(
                 "demo4",
-                "Demo Mechanic 4",
-                "",
+                "RONAK",
+                "8383838382",
                 "Towing Service",
                 "6 years",
                 "Tow Truck",
@@ -185,7 +235,10 @@ public class Mechanics_Activity extends AppCompatActivity {
 
         if (mechanicListener != null) {
             mechanicListener.remove();
-            mechanicListener = null;
+        }
+
+        if (favoriteListener != null) {
+            favoriteListener.remove();
         }
 
         super.onDestroy();
