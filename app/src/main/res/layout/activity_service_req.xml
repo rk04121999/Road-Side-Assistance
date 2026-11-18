@@ -234,7 +234,7 @@
             android:layout_marginTop="28dp"
             android:layout_marginBottom="24dp"
             android:background="@drawable/bg_login_btn"
-            android:backgroundTint="@null"
+            app:backgroundTint="@null"
             android:text="Submit Request"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"

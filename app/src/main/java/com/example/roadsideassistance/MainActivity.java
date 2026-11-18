@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences sp;
 
     private static final String ADMIN_EMAIL = "admin@rsa.com";
-    private static final String TECHNICIAN_EMAIL = "technician@gmail.com";
+    private static final String LEGACY_TECHNICIAN_EMAIL = "technician@gmail.com";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,14 +79,21 @@ public class MainActivity extends AppCompatActivity {
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful() || auth.getCurrentUser() == null) {
                         btnLogin.setEnabled(true);
-                        Toast.makeText(this, "Invalid email or password",
-                                Toast.LENGTH_SHORT).show();
+
+                        String error = task.getException() == null
+                                ? "Unknown login error"
+                                : task.getException().getMessage();
+
+                        Toast.makeText(this, error, Toast.LENGTH_LONG).show();
+
+                        android.util.Log.e("RSA_LOGIN", "Firebase login failed", task.getException());
+
                         return;
                     }
 
                     FirebaseUser user = auth.getCurrentUser();
 
-                    if (user == null) {
+                    if (user == null || user.getEmail() == null) {
                         btnLogin.setEnabled(true);
                         Toast.makeText(this, "Unable to get login account",
                                 Toast.LENGTH_SHORT).show();
@@ -95,24 +102,47 @@ public class MainActivity extends AppCompatActivity {
 
                     String loginEmail = user.getEmail();
 
-                    if (loginEmail == null) {
-                        btnLogin.setEnabled(true);
-                        Toast.makeText(this, "Account email not found",
-                                Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
                     if (loginEmail.equalsIgnoreCase(ADMIN_EMAIL)) {
                         openRoleActivity(Admin_Requests_Activity.class);
                         return;
                     }
 
-                    if (loginEmail.equalsIgnoreCase(TECHNICIAN_EMAIL)) {
+                    if (loginEmail.equalsIgnoreCase(LEGACY_TECHNICIAN_EMAIL)) {
                         openRoleActivity(Technician_Requests_Activity.class);
                         return;
                     }
 
-                    loadCustomerProfile(user);
+                    checkMechanicAccount(user);
+                });
+    }
+
+    private void checkMechanicAccount(FirebaseUser user) {
+        db.collection("mechanics")
+                .whereEqualTo("uid", user.getUid())
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
+                    if (!snapshot.isEmpty()) {
+                        openRoleActivity(Technician_Requests_Activity.class);
+                    } else {
+                        loadCustomerProfile(user);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
+                    btnLogin.setEnabled(true);
+                    auth.signOut();
+
+                    Toast.makeText(this,
+                            "Could not verify account role: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -130,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
                     if (!document.exists()) {
                         btnLogin.setEnabled(true);
                         auth.signOut();
+
                         Toast.makeText(this,
                                 "User profile not found in Firestore",
                                 Toast.LENGTH_LONG).show();

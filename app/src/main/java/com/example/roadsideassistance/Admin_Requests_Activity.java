@@ -3,16 +3,17 @@ package com.example.roadsideassistance;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.text.InputType;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ListView;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -32,58 +33,59 @@ public class Admin_Requests_Activity extends AppCompatActivity {
     private FirebaseFirestore db;
     private ListenerRegistration registration;
     private final List<DocumentSnapshot> requests = new ArrayList<>();
-    private ArrayAdapter<String> adapter;
-    private final List<String> rows = new ArrayList<>();
+    private RecyclerView recyclerAdminRequests;
+    private TextView tvAdminRequestMessage;
+    private RequestAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_admin_requests);
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
-//        if (user == null || user.getEmail() == null
-//                || !user.getEmail().equalsIgnoreCase("admin@rsa.com")
-//                || !user.isEmailVerified()) {
-//            Toast.makeText(this, "Authorized admin account required", Toast.LENGTH_LONG).show();
-//            finish();
-//            return;
-//        }
+        if (user == null || user.getEmail() == null
+                || !user.getEmail().equalsIgnoreCase("admin@rsa.com")) {
+            Toast.makeText(this, "Authorized admin account required",
+                    Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
 
         db = FirebaseFirestore.getInstance();
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(20, 20, 20, 20);
+        recyclerAdminRequests = findViewById(R.id.recyclerAdminRequests);
+        tvAdminRequestMessage = findViewById(R.id.tvAdminRequestMessage);
 
-        TextView title = new TextView(this);
-        title.setText("Manage Service Requests");
-        title.setTextSize(23);
-        title.setPadding(0, 8, 0, 20);
-        root.addView(title);
+        recyclerAdminRequests.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new RequestAdapter();
+        recyclerAdminRequests.setAdapter(adapter);
 
-        ListView listView = new ListView(this);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, rows);
-        listView.setAdapter(adapter);
-        root.addView(listView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1
-        ));
+        findViewById(R.id.btnManageMechanics).setOnClickListener(v ->
+                startActivity(new android.content.Intent(
+                        Admin_Requests_Activity.this,
+                        Admin_Mechanics_Activity.class
+                ))
+        );
 
-        setContentView(root);
+        tvAdminRequestMessage.setText("Loading requests...");
 
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            if (position < requests.size()) {
-                showAssignmentDialog(requests.get(position));
-            }
-        });
-
-        user.getIdToken(true).addOnSuccessListener(token -> loadRequests());
+        user.getIdToken(true)
+                .addOnSuccessListener(token -> loadRequests())
+                .addOnFailureListener(e ->
+                        showMessage("Unable to verify admin account: " + e.getMessage()));
     }
 
     private void loadRequests() {
         registration = db.collection("serviceRequests")
                 .addSnapshotListener((snapshot, error) -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
                     if (error != null) {
-                        showMessage("Unable to load requests: " + error.getMessage());
+                        tvAdminRequestMessage.setText("Unable to load requests.");
+                        showMessage(error.getMessage());
                         return;
                     }
 
@@ -92,31 +94,16 @@ public class Admin_Requests_Activity extends AppCompatActivity {
                     }
 
                     requests.clear();
-                    rows.clear();
-
-                    for (DocumentSnapshot document : snapshot.getDocuments()) {
-                        requests.add(document);
-
-                        String status = value(document, "status");
-                        String service = value(document, "serviceType");
-                        String location = value(document, "location");
-                        String technician = value(document, "technicianName");
-
-                        rows.add(
-                                "Service: " + service
-                                        + "\nStatus: " + status
-                                        + "\nLocation: " + location
-                                        + "\nTechnician: "
-                                        + (technician.isEmpty() ? "Not assigned" : technician)
-                                        + "\nRequest ID: " + document.getId()
-                        );
-                    }
-
+                    requests.addAll(snapshot.getDocuments());
                     adapter.notifyDataSetChanged();
+
+                    tvAdminRequestMessage.setText(requests.isEmpty()
+                            ? "No service requests found."
+                            : requests.size() + " service requests");
                 });
     }
 
-    private void showAssignmentDialog(DocumentSnapshot request) {
+    private void showMechanicSelection(DocumentSnapshot request) {
         String status = value(request, "status");
 
         if (!status.equals("Pending")
@@ -126,73 +113,172 @@ public class Admin_Requests_Activity extends AppCompatActivity {
             return;
         }
 
-        LinearLayout form = new LinearLayout(this);
-        form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(40, 10, 40, 0);
+        showMessage("Loading available mechanics...");
 
-        EditText name = field(form, "Technician full name", InputType.TYPE_CLASS_TEXT);
-        EditText email = field(form, "Technician registered email", InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        EditText phone = field(form, "Technician phone", InputType.TYPE_CLASS_PHONE);
-        EditText vehicle = field(form, "Service vehicle details", InputType.TYPE_CLASS_TEXT);
-
-        name.setText(value(request, "technicianName"));
-        email.setText(value(request, "technicianEmail"));
-        phone.setText(value(request, "technicianPhone"));
-        vehicle.setText(value(request, "technicianVehicle"));
-
-        new AlertDialog.Builder(this)
-                .setTitle("Assign Technician")
-                .setView(form)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Assign", (dialog, which) -> {
-                    String technicianName = name.getText().toString().trim();
-                    String technicianEmail = email.getText().toString().trim()
-                            .toLowerCase(Locale.ROOT);
-                    String technicianPhone = phone.getText().toString().trim();
-                    String technicianVehicle = vehicle.getText().toString().trim();
-
-                    if (technicianName.isEmpty() || technicianEmail.isEmpty()
-                            || !android.util.Patterns.EMAIL_ADDRESS.matcher(technicianEmail).matches()
-                            || technicianPhone.isEmpty() || technicianVehicle.isEmpty()) {
-                        showMessage("Enter valid technician name, email, phone and vehicle");
+        db.collection("mechanics")
+                .whereEqualTo("available", true)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (isFinishing() || isDestroyed()) {
                         return;
                     }
 
-                    Map<String, Object> update = new HashMap<>();
-                    update.put("technicianName", technicianName);
-                    update.put("technicianEmail", technicianEmail);
-                    update.put("technicianPhone", technicianPhone);
-                    update.put("technicianVehicle", technicianVehicle);
-                    update.put("status", "Assigned");
-                    update.put("updatedAt", FieldValue.serverTimestamp());
+                    List<DocumentSnapshot> validMechanics = new ArrayList<>();
+                    List<String> mechanicOptions = new ArrayList<>();
 
-                    db.collection("serviceRequests")
-                            .document(request.getId())
-                            .update(update)
-                            .addOnSuccessListener(unused ->
-                                    showMessage("Technician assigned successfully"))
-                            .addOnFailureListener(e ->
-                                    showMessage("Assignment failed: " + e.getMessage()));
+                    for (DocumentSnapshot mechanic : snapshot.getDocuments()) {
+                        String name = value(mechanic, "name");
+                        String email = value(mechanic, "email");
+                        String uid = value(mechanic, "uid");
+                        String phone = value(mechanic, "phone");
+                        String specialization = value(mechanic, "specialization");
+                        String vehicle = value(mechanic, "vehicle");
+
+                        if (name.isEmpty() || email.isEmpty() || uid.isEmpty()
+                                || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+                                || phone.isEmpty() || vehicle.isEmpty()) {
+                            continue;
+                        }
+
+                        validMechanics.add(mechanic);
+
+                        mechanicOptions.add(
+                                name
+                                        + "\n" + specialization
+                                        + "\nEmail: " + email
+                                        + "\nPhone: " + phone
+                                        + "\nVehicle: " + vehicle
+                        );
+                    }
+
+                    if (validMechanics.isEmpty()) {
+                        showMessage("No registered and available mechanics found. "
+                                + "Add a mechanic account first.");
+                        return;
+                    }
+
+                    String[] options = mechanicOptions.toArray(new String[0]);
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("Select Available Mechanic")
+                            .setItems(options, (dialog, which) ->
+                                    assignMechanic(request, validMechanics.get(which)))
+                            .setNegativeButton("Cancel", null)
+                            .show();
                 })
-                .show();
+                .addOnFailureListener(e ->
+                        showMessage("Unable to load mechanics: " + e.getMessage()));
     }
 
-    private EditText field(LinearLayout parent, String hint, int inputType) {
-        EditText editText = new EditText(this);
-        editText.setHint(hint);
-        editText.setInputType(inputType);
-        parent.addView(editText);
-        return editText;
+    private void assignMechanic(DocumentSnapshot request, DocumentSnapshot mechanic) {
+        String technicianName = value(mechanic, "name");
+        String technicianEmail = value(mechanic, "email").toLowerCase(Locale.ROOT);
+        String technicianUid = value(mechanic, "uid");
+        String technicianPhone = value(mechanic, "phone");
+        String technicianVehicle = value(mechanic, "vehicle");
+
+        if (technicianName.isEmpty() || technicianEmail.isEmpty()
+                || technicianUid.isEmpty() || technicianPhone.isEmpty()
+                || technicianVehicle.isEmpty()
+                || !android.util.Patterns.EMAIL_ADDRESS.matcher(technicianEmail).matches()) {
+            showMessage("Selected mechanic has incomplete account details.");
+            return;
+        }
+
+        Map<String, Object> update = new HashMap<>();
+        update.put("technicianName", technicianName);
+        update.put("technicianEmail", technicianEmail);
+        update.put("technicianUid", technicianUid);
+        update.put("technicianPhone", technicianPhone);
+        update.put("technicianVehicle", technicianVehicle);
+        update.put("status", "Assigned");
+        update.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("serviceRequests")
+                .document(request.getId())
+                .update(update)
+                .addOnSuccessListener(result ->
+                        showMessage(technicianName + " assigned successfully"))
+                .addOnFailureListener(e ->
+                        showMessage("Assignment failed: " + e.getMessage()));
     }
 
     private String value(DocumentSnapshot document, String key) {
-        String value = document.getString(key);
-        return value == null ? "" : value;
+        String result = document.getString(key);
+        return result == null ? "" : result.trim();
     }
 
     private void showMessage(String message) {
         if (!isFinishing() && !isDestroyed()) {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestViewHolder> {
+
+        @NonNull
+        @Override
+        public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_admin_request, parent, false);
+            return new RequestViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RequestViewHolder holder, int position) {
+            DocumentSnapshot request = requests.get(position);
+
+            String service = value(request, "serviceType");
+            String status = value(request, "status");
+            String location = value(request, "location");
+            String technician = value(request, "technicianName");
+
+            holder.tvService.setText(service.isEmpty() ? "Service Request" : service);
+            holder.tvStatus.setText("Status: " + (status.isEmpty() ? "Unknown" : status));
+            holder.tvLocation.setText("Location: "
+                    + (location.isEmpty() ? "Not provided" : location));
+            holder.tvTechnician.setText("Technician: "
+                    + (technician.isEmpty() ? "Not assigned" : technician));
+            holder.tvRequestId.setText("Request ID: " + request.getId());
+
+            if (status.equals("Completed")) {
+                holder.tvStatus.setTextColor(0xFF198754);
+            } else if (status.equals("Pending") || status.equals("Rejected")) {
+                holder.tvStatus.setTextColor(0xFFD32F2F);
+            } else {
+                holder.tvStatus.setTextColor(0xFFEF6C00);
+            }
+
+            boolean canAssign = status.equals("Pending")
+                    || status.equals("Assigned")
+                    || status.equals("Rejected");
+
+            holder.btnAssign.setEnabled(canAssign);
+            holder.btnAssign.setText(
+                    canAssign ? "Assign Technician" : "Assignment Unavailable");
+
+            holder.btnAssign.setOnClickListener(v -> showMechanicSelection(request));
+            holder.itemView.setOnClickListener(v -> showMechanicSelection(request));
+        }
+
+        @Override
+        public int getItemCount() {
+            return requests.size();
+        }
+
+        class RequestViewHolder extends RecyclerView.ViewHolder {
+            TextView tvService, tvStatus, tvLocation, tvTechnician, tvRequestId;
+            Button btnAssign;
+
+            RequestViewHolder(@NonNull View itemView) {
+                super(itemView);
+                tvService = itemView.findViewById(R.id.tvRequestService);
+                tvStatus = itemView.findViewById(R.id.tvRequestStatus);
+                tvLocation = itemView.findViewById(R.id.tvRequestLocation);
+                tvTechnician = itemView.findViewById(R.id.tvRequestTechnician);
+                tvRequestId = itemView.findViewById(R.id.tvRequestId);
+                btnAssign = itemView.findViewById(R.id.btnAssignTechnician);
+            }
         }
     }
 

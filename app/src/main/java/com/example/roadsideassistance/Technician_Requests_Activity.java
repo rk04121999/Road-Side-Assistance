@@ -1,19 +1,22 @@
 
 package com.example.roadsideassistance;
 
-import android.app.AlertDialog;
+import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.os.Bundle;
-import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
-import android.widget.ListView;
+import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -30,229 +33,375 @@ import java.util.Map;
 
 public class Technician_Requests_Activity extends AppCompatActivity {
 
+    private TextView tvTechnicianName;
+    private TextView tvTechnicianEmail;
+    private TextView tvTotalJobs;
+    private TextView tvActiveJobs;
+    private TextView tvCompletedJobs;
+    private TextView tvTechnicianMessage;
+
+    private RecyclerView recyclerTechnicianRequests;
+
     private FirebaseFirestore db;
-    private ListenerRegistration registration;
-    private final List<DocumentSnapshot> requests = new ArrayList<>();
-    private final List<String> rows = new ArrayList<>();
-    private ArrayAdapter<String> adapter;
-    private ListView listView;
-    private TextView messageView;
+    private FirebaseAuth auth;
     private String technicianEmail;
+    private String technicianUid;
+
+    private TechnicianRequestAdapter adapter;
+    private final List<DocumentSnapshot> requestList = new ArrayList<>();
+    private ListenerRegistration requestListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_technician_requests);
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        tvTechnicianName = findViewById(R.id.tvTechnicianName);
+        tvTechnicianEmail = findViewById(R.id.tvTechnicianEmail);
+        tvTotalJobs = findViewById(R.id.tvTotalJobs);
+        tvActiveJobs = findViewById(R.id.tvActiveJobs);
+        tvCompletedJobs = findViewById(R.id.tvCompletedJobs);
+        tvTechnicianMessage = findViewById(R.id.tvTechnicianMessage);
+        recyclerTechnicianRequests = findViewById(R.id.recyclerTechnicianRequests);
+
+        auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        FirebaseUser user = auth.getCurrentUser();
 
         if (user == null || user.getEmail() == null) {
-            Toast.makeText(this, "Please log in first", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Please log in again", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, MainActivity.class));
             finish();
             return;
         }
 
-        technicianEmail = user.getEmail().trim();
-        db = FirebaseFirestore.getInstance();
+        technicianEmail = user.getEmail().trim().toLowerCase(Locale.ROOT);
+        technicianUid = user.getUid();
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(20, 20, 20, 20);
-        root.setBackgroundColor(Color.WHITE);
+        tvTechnicianEmail.setText(technicianEmail);
+        tvTechnicianName.setText("Welcome, Technician");
 
-        TextView title = new TextView(this);
-        title.setText("My Assigned Jobs");
-        title.setTextSize(24);
-        title.setTypeface(null, Typeface.BOLD);
-        title.setTextColor(Color.rgb(25, 135, 84));
-        title.setGravity(Gravity.CENTER_VERTICAL);
-        title.setPadding(0, 8, 0, 8);
-        root.addView(title);
+        recyclerTechnicianRequests.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new TechnicianRequestAdapter(requestList, this::showJobActions);
+        recyclerTechnicianRequests.setAdapter(adapter);
 
-        TextView account = new TextView(this);
-        account.setText("Technician: " + technicianEmail);
-        account.setTextSize(13);
-        account.setTextColor(Color.DKGRAY);
-        account.setPadding(0, 0, 0, 16);
-        root.addView(account);
-
-        messageView = new TextView(this);
-        messageView.setText("Loading assigned jobs...");
-        messageView.setTextSize(16);
-        messageView.setTextColor(Color.DKGRAY);
-        messageView.setGravity(Gravity.CENTER);
-        messageView.setPadding(12, 24, 12, 24);
-        root.addView(messageView);
-
-        listView = new ListView(this);
-        adapter = new ArrayAdapter<>(
-                this,
-                android.R.layout.simple_list_item_1,
-                rows
-        );
-        listView.setAdapter(adapter);
-
-        root.addView(listView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1
-        ));
-
-        setContentView(root);
-
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            if (position >= 0 && position < requests.size()) {
-                showStatusOptions(requests.get(position));
-            }
-        });
-
-        loadAssignedJobs();
+        loadTechnicianProfile();
+        loadAssignedRequests();
     }
 
-    private void loadAssignedJobs() {
-        if (registration != null) {
-            registration.remove();
-        }
+    private void loadTechnicianProfile() {
+        db.collection("mechanics")
+                .whereEqualTo("uid", technicianUid)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        String name = querySnapshot.getDocuments()
+                                .get(0).getString("name");
 
-        messageView.setVisibility(View.VISIBLE);
-        messageView.setText("Loading assigned jobs...");
-
-        registration = db.collection("serviceRequests")
-                .whereEqualTo("technicianEmail", technicianEmail)
-                .addSnapshotListener((snapshot, error) -> {
-                    if (isFinishing() || isDestroyed()) {
-                        return;
-                    }
-
-                    if (error != null) {
-                        requests.clear();
-                        rows.clear();
-                        adapter.notifyDataSetChanged();
-                        listView.setVisibility(View.GONE);
-                        messageView.setVisibility(View.VISIBLE);
-                        messageView.setText("Unable to load assigned jobs.\n\n"
-                                + error.getMessage());
-                        return;
-                    }
-
-                    if (snapshot == null) {
-                        return;
-                    }
-
-                    requests.clear();
-                    rows.clear();
-
-                    for (DocumentSnapshot document : snapshot.getDocuments()) {
-                        requests.add(document);
-
-                        String service = value(document, "serviceType", "Not specified");
-                        String vehicle = value(document, "vehicleType", "Not specified");
-                        String issue = value(document, "issue", "Not specified");
-                        String location = value(document, "location", "Not specified");
-                        String status = value(document, "status", "Pending");
-                        String customerEmail = value(document, "userEmail", "Not available");
-                        String technicianName = value(document, "technicianName", "Not available");
-                        String technicianPhone = value(document, "technicianPhone", "Not available");
-                        String technicianVehicle = value(document, "technicianVehicle", "Not available");
-
-                        String row = "SERVICE: " + service
-                                + "\n\nVehicle: " + vehicle
-                                + "\nIssue: " + issue
-                                + "\nCustomer location: " + location
-                                + "\nCustomer email: " + customerEmail
-                                + "\n\nAssigned technician: " + technicianName
-                                + "\nTechnician phone: " + technicianPhone
-                                + "\nTechnician vehicle: " + technicianVehicle
-                                + "\n\nSTATUS: " + status
-                                + "\n\nTap here to update status";
-
-                        rows.add(row);
-                    }
-
-                    adapter.notifyDataSetChanged();
-
-                    if (requests.isEmpty()) {
-                        listView.setVisibility(View.GONE);
-                        messageView.setVisibility(View.VISIBLE);
-                        messageView.setText(
-                                "No jobs assigned yet.\n\n"
-                                        + "Ask the admin to assign a request to:\n"
-                                        + technicianEmail
-                        );
-                    } else {
-                        messageView.setVisibility(View.GONE);
-                        listView.setVisibility(View.VISIBLE);
+                        if (name != null && !name.trim().isEmpty()) {
+                            tvTechnicianName.setText("Welcome, " + name.trim());
+                        }
                     }
                 });
     }
 
-    private void showStatusOptions(DocumentSnapshot request) {
-        String currentStatus = value(request, "status", "Pending");
-        String[] actions;
-        String[] nextStatuses;
+    private void loadAssignedRequests() {
+        tvTechnicianMessage.setVisibility(View.VISIBLE);
+        tvTechnicianMessage.setText("Loading your assigned jobs...");
 
-        switch (currentStatus.toLowerCase(Locale.ROOT)) {
-            case "assigned":
-                actions = new String[]{"Accept Job", "Reject Job"};
-                nextStatuses = new String[]{"Accepted", "Rejected"};
-                break;
+        requestListener = db.collection("serviceRequests")
+                .whereEqualTo("technicianEmail", technicianEmail)
+                .addSnapshotListener((querySnapshot, error) -> {
 
-            case "accepted":
-                actions = new String[]{"Start Work"};
-                nextStatuses = new String[]{"In Progress"};
-                break;
+                    if (error != null) {
+                        tvTechnicianMessage.setVisibility(View.VISIBLE);
+                        tvTechnicianMessage.setText("Unable to load jobs. Please try again.");
+                        Toast.makeText(
+                                this,
+                                "Error: " + error.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
+                    }
 
-            case "in progress":
-                actions = new String[]{"Mark Completed"};
-                nextStatuses = new String[]{"Completed"};
-                break;
+                    if (querySnapshot == null) {
+                        return;
+                    }
 
-            default:
-                Toast.makeText(
-                        this,
-                        "No status actions are available for this job",
-                        Toast.LENGTH_SHORT
-                ).show();
-                return;
+                    requestList.clear();
+                    requestList.addAll(querySnapshot.getDocuments());
+
+                    adapter.notifyDataSetChanged();
+                    updateJobCounts();
+
+                    if (requestList.isEmpty()) {
+                        tvTechnicianMessage.setVisibility(View.VISIBLE);
+                        tvTechnicianMessage.setText("No assigned jobs available right now.");
+                    } else {
+                        tvTechnicianMessage.setVisibility(View.GONE);
+                    }
+                });
+    }
+
+    private void updateJobCounts() {
+        int total = requestList.size();
+        int active = 0;
+        int completed = 0;
+
+        for (DocumentSnapshot document : requestList) {
+            String status = document.getString("status");
+
+            if ("Completed".equalsIgnoreCase(status)) {
+                completed++;
+            } else if ("Assigned".equalsIgnoreCase(status)
+                    || "Accepted".equalsIgnoreCase(status)
+                    || "In Progress".equalsIgnoreCase(status)) {
+                active++;
+            }
         }
 
-        new AlertDialog.Builder(this)
-                .setTitle("Update Job Status")
-                .setItems(actions, (dialog, which) -> {
-                    Map<String, Object> update = new HashMap<>();
-                    update.put("status", nextStatuses[which]);
-                    update.put("updatedAt", FieldValue.serverTimestamp());
+        tvTotalJobs.setText(String.valueOf(total));
+        tvActiveJobs.setText(String.valueOf(active));
+        tvCompletedJobs.setText(String.valueOf(completed));
+    }
 
-                    db.collection("serviceRequests")
-                            .document(request.getId())
-                            .update(update)
-                            .addOnSuccessListener(unused ->
-                                    Toast.makeText(
-                                            this,
-                                            "Job status updated to " + nextStatuses[which],
-                                            Toast.LENGTH_SHORT
-                                    ).show())
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(
-                                            this,
-                                            "Status update failed: " + e.getMessage(),
-                                            Toast.LENGTH_LONG
-                                    ).show());
-                })
+    private void showJobActions(DocumentSnapshot document) {
+        String status = document.getString("status");
+
+        if (status == null) {
+            return;
+        }
+
+        if ("Assigned".equalsIgnoreCase(status)) {
+            String[] options = {"Accept Job", "Reject Job"};
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Manage Service Request")
+                    .setItems(options, (dialog, which) -> {
+                        if (which == 0) {
+                            updateJobStatus(document, "Accepted");
+                        } else {
+                            updateJobStatus(document, "Rejected");
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+
+        } else if ("Accepted".equalsIgnoreCase(status)) {
+            confirmStatusChange(
+                    document,
+                    "Start Work",
+                    "Are you ready to start this service?",
+                    "In Progress"
+            );
+
+        } else if ("In Progress".equalsIgnoreCase(status)) {
+            confirmStatusChange(
+                    document,
+                    "Complete Job",
+                    "Are you sure this service has been completed?",
+                    "Completed"
+            );
+        }
+    }
+
+    private void confirmStatusChange(
+            DocumentSnapshot document,
+            String title,
+            String message,
+            String newStatus
+    ) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Confirm", (dialog, which) ->
+                        updateJobStatus(document, newStatus))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private String value(DocumentSnapshot document, String key, String fallback) {
-        String result = document.getString(key);
-        return result == null || result.trim().isEmpty() ? fallback : result;
+    private void updateJobStatus(DocumentSnapshot document, String newStatus) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", newStatus);
+        updates.put("updatedAt", FieldValue.serverTimestamp());
+
+        db.collection("serviceRequests")
+                .document(document.getId())
+                .update(updates)
+                .addOnSuccessListener(unused ->
+                        Toast.makeText(
+                                this,
+                                "Job status updated to " + newStatus,
+                                Toast.LENGTH_SHORT
+                        ).show()
+                )
+                .addOnFailureListener(e ->
+                        Toast.makeText(
+                                this,
+                                "Could not update status: " + e.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
     }
 
     @Override
     protected void onDestroy() {
-        if (registration != null) {
-            registration.remove();
-            registration = null;
-        }
         super.onDestroy();
+
+        if (requestListener != null) {
+            requestListener.remove();
+        }
+    }
+
+    interface JobActionListener {
+        void onJobAction(DocumentSnapshot document);
+    }
+
+    static class TechnicianRequestAdapter
+            extends RecyclerView.Adapter<TechnicianRequestAdapter.JobViewHolder> {
+
+        private final List<DocumentSnapshot> requests;
+        private final JobActionListener listener;
+
+        TechnicianRequestAdapter(
+                List<DocumentSnapshot> requests,
+                JobActionListener listener
+        ) {
+            this.requests = requests;
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        public JobViewHolder onCreateViewHolder(
+                @NonNull ViewGroup parent,
+                int viewType
+        ) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_technician_request, parent, false);
+
+            return new JobViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(
+                @NonNull JobViewHolder holder,
+                int position
+        ) {
+            DocumentSnapshot document = requests.get(position);
+
+            String service = getValue(document, "serviceType", "Service Request");
+            String vehicle = getValue(document, "vehicleType", "Not provided");
+            String issue = getValue(document, "issue", "Not provided");
+            String location = getValue(document, "location", "Not provided");
+            String customer = getValue(
+                    document,
+                    "userName",
+                    getValue(document, "customerName",
+                            getValue(document, "userEmail", "Not provided"))
+            );
+            String phone = getValue(
+                    document,
+                    "userPhone",
+                    getValue(document, "customerPhone", "")
+            );
+            String status = getValue(document, "status", "Unknown");
+
+            holder.tvJobService.setText(service);
+            holder.tvJobVehicle.setText("Vehicle: " + vehicle);
+            holder.tvJobIssue.setText("Issue: " + issue);
+            holder.tvJobLocation.setText("Location: " + location);
+            holder.tvJobCustomer.setText("Customer: " + customer);
+
+            if (phone.trim().isEmpty()) {
+                holder.tvJobPhone.setVisibility(View.GONE);
+            } else {
+                holder.tvJobPhone.setVisibility(View.VISIBLE);
+                holder.tvJobPhone.setText("Phone: " + phone);
+            }
+
+            holder.tvJobStatus.setText(status);
+            setStatusColor(holder.tvJobStatus, status);
+
+            if ("Assigned".equalsIgnoreCase(status)) {
+                holder.btnJobAction.setText("Review Job");
+                holder.btnJobAction.setEnabled(true);
+            } else if ("Accepted".equalsIgnoreCase(status)) {
+                holder.btnJobAction.setText("Start Work");
+                holder.btnJobAction.setEnabled(true);
+            } else if ("In Progress".equalsIgnoreCase(status)) {
+                holder.btnJobAction.setText("Complete Job");
+                holder.btnJobAction.setEnabled(true);
+            } else {
+                holder.btnJobAction.setText(status);
+                holder.btnJobAction.setEnabled(false);
+            }
+
+            holder.btnJobAction.setOnClickListener(v ->
+                    listener.onJobAction(document));
+        }
+
+        private static String getValue(
+                DocumentSnapshot document,
+                String key,
+                String fallback
+        ) {
+            String value = document.getString(key);
+
+            if (value == null || value.trim().isEmpty()) {
+                return fallback;
+            }
+
+            return value.trim();
+        }
+
+        private static void setStatusColor(TextView textView, String status) {
+            if ("Completed".equalsIgnoreCase(status)) {
+                textView.setTextColor(Color.parseColor("#198754"));
+            } else if ("Pending".equalsIgnoreCase(status)
+                    || "Rejected".equalsIgnoreCase(status)
+                    || "Cancelled".equalsIgnoreCase(status)) {
+                textView.setTextColor(Color.parseColor("#D32F2F"));
+            } else if ("In Progress".equalsIgnoreCase(status)
+                    || "Accepted".equalsIgnoreCase(status)) {
+                textView.setTextColor(Color.parseColor("#1976D2"));
+            } else {
+                textView.setTextColor(Color.parseColor("#E6A000"));
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return requests.size();
+        }
+
+        static class JobViewHolder extends RecyclerView.ViewHolder {
+
+            TextView tvJobService;
+            TextView tvJobStatus;
+            TextView tvJobVehicle;
+            TextView tvJobIssue;
+            TextView tvJobLocation;
+            TextView tvJobCustomer;
+            TextView tvJobPhone;
+            Button btnJobAction;
+            CardView cardJob;
+
+            JobViewHolder(@NonNull View itemView) {
+                super(itemView);
+
+                cardJob = itemView.findViewById(R.id.cardTechnicianJob);
+                tvJobService = itemView.findViewById(R.id.tvJobService);
+                tvJobStatus = itemView.findViewById(R.id.tvJobStatus);
+                tvJobVehicle = itemView.findViewById(R.id.tvJobVehicle);
+                tvJobIssue = itemView.findViewById(R.id.tvJobIssue);
+                tvJobLocation = itemView.findViewById(R.id.tvJobLocation);
+                tvJobCustomer = itemView.findViewById(R.id.tvJobCustomer);
+                tvJobPhone = itemView.findViewById(R.id.tvJobPhone);
+                btnJobAction = itemView.findViewById(R.id.btnJobAction);
+            }
+        }
     }
 }
