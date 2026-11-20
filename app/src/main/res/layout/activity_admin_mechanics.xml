@@ -2,6 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fitsSystemWindows="true"
     android:background="#F5F5F5"
     android:orientation="vertical"
     android:padding="16dp">
@@ -21,7 +23,8 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginTop="14dp"
-        android:backgroundTint="#D32F2F"
+        app:backgroundTint="@null"
+        android:background="@drawable/bg_login_btn"
         android:text="+ Add New Mechanic"
         android:textAllCaps="false"
         android:textColor="#FFFFFF" />

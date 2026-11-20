@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:fillViewport="true"
     android:scrollbars="vertical"
     tools:context=".SignUpActivity">
@@ -26,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="3dp"
             android:text="Create Your Account.."
-            android:textColor="@color/material_dynamic_neutral30"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="27sp" />
 
         <androidx.cardview.widget.CardView

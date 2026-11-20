@@ -1,17 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <gradient
-        android:startColor="#771A1A"
-        android:centerColor="#CB0A0A"
-        android:endColor="#710303"
-        android:angle="0"
-        android:type="linear" />
+    <!-- Base Dark Red Border & Main Body Gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="100dp" />
+            <gradient
+                android:angle="0"
+                android:type="linear"
+                android:startColor="#771A1A"
+                android:centerColor="#CB0A0A"
+                android:endColor="#710303" />
+            <stroke
+                android:width="1dp"
+                android:color="#5E0000" />
+        </shape>
+    </item>
 
-    <corners android:radius="20dp" />
+    <!-- Subtle Inner Rim / Bevel Outline -->
+    <item
+        android:top="6dp"
+        android:bottom="6dp"
+        android:left="6dp"
+        android:right="6dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="100dp" />
+            <stroke
+                android:width="0dp"
+                android:color="#40FF8888" />
+        </shape>
+    </item>
 
-</shape>
+    <!-- Top Glossy Highlight -->
+    <item
+        android:top="3dp"
+        android:bottom="32dp"
+        android:left="14dp"
+        android:right="14dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="100dp" />
+            <gradient
+                android:angle="270"
+                android:startColor="#85FF6969"
+                android:endColor="#00FF6969" />
+        </shape>
+    </item>
+
+</layer-list>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<!--<shape xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    android:shape="rectangle">-->
+
+<!--    <gradient-->
+<!--        android:startColor="#771A1A"-->
+<!--        android:centerColor="#CB0A0A"-->
+<!--        android:endColor="#710303"-->
+<!--        android:angle="0"-->
+<!--        android:type="linear" />-->
+
+<!--    <corners android:radius="20dp" />-->
+
+<!--</shape>-->
 
 
 
