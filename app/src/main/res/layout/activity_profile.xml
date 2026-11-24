@@ -22,11 +22,12 @@
             android:layout_marginTop="25dp"
             android:background="@drawable/profile_circle_bg"
             android:backgroundTint="#22C013"
-            android:contentDescription="Profile Picture"
+            android:contentDescription="Profile Picture. Tap to upload, change or delete"
+            android:clickable="true"
+            android:focusable="true"
             android:padding="18dp"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_profile"
-            app:tint="?attr/colorOnPrimary" />
+            android:src="@drawable/ic_profile" />
 
         <TextView
             android:id="@+id/txtProfileName"
@@ -216,71 +217,133 @@
 
             </androidx.cardview.widget.CardView>
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:layout_marginBottom="12dp"
+                android:text="My Vehicles"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="4dp"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Add and manage your vehicles"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnAddVehicle"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_login_btn"
+                        android:text="ADD VEHICLE"
+                        android:textColor="?attr/colorOnPrimary"
+                        android:textStyle="bold"
+                        app:backgroundTint="@null" />
+
+                    <TextView
+                        android:id="@+id/tvNoVehicles"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center"
+                        android:text="No vehicles added yet"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:id="@+id/vehicleListContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
             <Button
                 android:id="@+id/btnEditProfile"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="18dp"
-                app:backgroundTint="@null"
                 android:background="@drawable/bg_signup_btn"
                 android:text="EDIT PROFILE"
                 android:textColor="?attr/colorOnPrimary"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:stateListAnimator="@null" />
+                android:stateListAnimator="@null"
+                app:backgroundTint="@null" />
 
             <Button
                 android:id="@+id/profile_update"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="18dp"
-                app:backgroundTint="@null"
                 android:background="@drawable/bg_login_btn"
                 android:text="UPDATE PROFILE"
                 android:textColor="?attr/colorOnPrimary"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                android:stateListAnimator="@null" />
+                android:stateListAnimator="@null"
+                app:backgroundTint="@null" />
 
             <Button
                 android:id="@+id/btnChangePassword"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="12dp"
-                app:backgroundTint="@null"
                 android:background="@drawable/bg_login_btn"
                 android:text="CHANGE PASSWORD"
                 android:textColor="?attr/colorOnSecondary"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:stateListAnimator="@null" />
+                android:stateListAnimator="@null"
+                app:backgroundTint="@null" />
 
             <Button
                 android:id="@+id/btnlogoutProfile"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="12dp"
-                app:backgroundTint="@null"
                 android:background="@drawable/bg_signup_btn"
                 android:text="LOGOUT"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:stateListAnimator="@null" />
+                android:stateListAnimator="@null"
+                app:backgroundTint="@null" />
 
             <Button
                 android:id="@+id/btnDeleteProfile"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="12dp"
-                app:backgroundTint="@null"
                 android:background="@drawable/bg_signup_btn"
                 android:text="DELETE ACCOUNT"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:stateListAnimator="@null" />
+                android:stateListAnimator="@null"
+                app:backgroundTint="@null" />
 
         </LinearLayout>
 

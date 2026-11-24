@@ -1,15 +1,18 @@
+
 package com.example.roadsideassistance;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -24,9 +27,13 @@ public class MainActivity extends AppCompatActivity {
     FirebaseAuth auth;
     FirebaseFirestore db;
     SharedPreferences sp;
+    AlertDialog loadingDialog;
 
     private static final String ADMIN_EMAIL = "admin@rsa.com";
     private static final String LEGACY_TECHNICIAN_EMAIL = "technician@gmail.com";
+    private static final String TAG = "RSA_LOGIN";
+
+    private long operationStartTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +56,25 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(MainActivity.this, SignUpActivity.class)));
 
         forgotPassword.setOnClickListener(v -> resetPassword());
+    }
+
+    private void showLoading() {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
+        loadingDialog = new AlertDialog.Builder(this)
+                .setMessage("Please wait, logging in...")
+                .setCancelable(false)
+                .create();
+
+        loadingDialog.show();
+    }
+
+    private void hideLoading() {
+        if (loadingDialog != null && loadingDialog.isShowing()) {
+            loadingDialog.dismiss();
+        }
     }
 
     private void loginUser() {
@@ -74,10 +100,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
         btnLogin.setEnabled(false);
+        showLoading();
+
+        operationStartTime = System.currentTimeMillis();
+
+        Log.d(TAG, "Starting Firebase Authentication");
 
         auth.signInWithEmailAndPassword(userEmail, userPassword)
                 .addOnCompleteListener(task -> {
+
+                    Log.d(TAG, "Authentication completed in "
+                            + (System.currentTimeMillis() - operationStartTime) + " ms");
+
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
                     if (!task.isSuccessful() || auth.getCurrentUser() == null) {
+                        hideLoading();
                         btnLogin.setEnabled(true);
 
                         String error = task.getException() == null
@@ -86,19 +126,23 @@ public class MainActivity extends AppCompatActivity {
 
                         Toast.makeText(this, error, Toast.LENGTH_LONG).show();
 
-                        android.util.Log.e("RSA_LOGIN", "Firebase login failed", task.getException());
-
+                        Log.e(TAG, "Firebase login failed", task.getException());
                         return;
                     }
 
                     FirebaseUser user = auth.getCurrentUser();
 
                     if (user == null || user.getEmail() == null) {
+                        hideLoading();
                         btnLogin.setEnabled(true);
-                        Toast.makeText(this, "Unable to get login account",
+
+                        Toast.makeText(this,
+                                "Unable to get login account",
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
+
+                    Log.d(TAG, "Authentication successful");
 
                     String loginEmail = user.getEmail();
 
@@ -117,11 +161,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkMechanicAccount(FirebaseUser user) {
+        long startTime = System.currentTimeMillis();
+
+        Log.d(TAG, "Checking mechanic account");
+
         db.collection("mechanics")
                 .whereEqualTo("uid", user.getUid())
                 .limit(1)
                 .get()
                 .addOnSuccessListener(snapshot -> {
+
+                    Log.d(TAG, "Mechanic check completed in "
+                            + (System.currentTimeMillis() - startTime) + " ms");
+
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
@@ -133,11 +185,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> {
+
+                    Log.e(TAG, "Mechanic check failed", e);
+
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
 
+                    hideLoading();
                     btnLogin.setEnabled(true);
+
                     auth.signOut();
 
                     Toast.makeText(this,
@@ -149,15 +206,24 @@ public class MainActivity extends AppCompatActivity {
     private void loadCustomerProfile(FirebaseUser user) {
         String uid = user.getUid();
 
+        long startTime = System.currentTimeMillis();
+
+        Log.d(TAG, "Loading customer profile");
+
         db.collection("users")
                 .document(uid)
                 .get()
                 .addOnSuccessListener(document -> {
+
+                    Log.d(TAG, "Customer profile loaded in "
+                            + (System.currentTimeMillis() - startTime) + " ms");
+
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
 
                     if (!document.exists()) {
+                        hideLoading();
                         btnLogin.setEnabled(true);
                         auth.signOut();
 
@@ -178,10 +244,14 @@ public class MainActivity extends AppCompatActivity {
                     openRoleActivity(HomeActivity.class);
                 })
                 .addOnFailureListener(e -> {
+
+                    Log.e(TAG, "Customer profile loading failed", e);
+
                     if (isFinishing() || isDestroyed()) {
                         return;
                     }
 
+                    hideLoading();
                     btnLogin.setEnabled(true);
 
                     Toast.makeText(this,
@@ -191,9 +261,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void openRoleActivity(Class<?> activityClass) {
+        hideLoading();
+
         Intent intent = new Intent(MainActivity.this, activityClass);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
         startActivity(intent);
         finish();
     }
@@ -217,6 +290,11 @@ public class MainActivity extends AppCompatActivity {
 
         auth.sendPasswordResetEmail(userEmail)
                 .addOnCompleteListener(task -> {
+
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+
                     forgotPassword.setEnabled(true);
 
                     if (task.isSuccessful()) {
@@ -224,10 +302,18 @@ public class MainActivity extends AppCompatActivity {
                                 "If this email is registered, a password reset email will be sent.",
                                 Toast.LENGTH_LONG).show();
                     } else {
+                        Log.e(TAG, "Password reset failed", task.getException());
+
                         Toast.makeText(this,
                                 "Could not send reset email. Check Firebase settings and try again.",
                                 Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    @Override
+    protected void onDestroy() {
+        hideLoading();
+        super.onDestroy();
     }
 }
