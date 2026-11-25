@@ -1,3 +1,4 @@
+
 package com.example.roadsideassistance;
 
 import android.content.Intent;
@@ -19,8 +20,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -93,7 +97,6 @@ public class HomeActivity extends AppCompatActivity {
         );
 
         rvGarageServices.setAdapter(new GarageServiceAdapter(this, garageList));
-
 
         rvAvailableMechanics = findViewById(R.id.rvAvailableMechanics);
         tvHomeMechanicsMessage = findViewById(R.id.tvHomeMechanicsMessage);
@@ -244,6 +247,29 @@ public class HomeActivity extends AppCompatActivity {
 
                     mechanicAdapter.notifyDataSetChanged();
                 });
+    }
+
+    private void updateLastUsed() {
+
+        if (userId == null || userId.isEmpty()) {
+            return;
+        }
+
+        db.collection("users")
+                .document(userId)
+                .set(
+                        Collections.singletonMap(
+                                "lastUsedAt",
+                                FieldValue.serverTimestamp()
+                        ),
+                        SetOptions.merge()
+                );
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        updateLastUsed();
     }
 
     @Override

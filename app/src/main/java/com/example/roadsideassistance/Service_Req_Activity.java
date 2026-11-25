@@ -1,3 +1,4 @@
+
 package com.example.roadsideassistance;
 
 import android.os.Bundle;
@@ -124,6 +125,10 @@ public class Service_Req_Activity extends AppCompatActivity {
             prefillRequestAgain();
         }
 
+        if (!isEditMode && !isRequestAgain) {
+            loadDefaultVehicle();
+        }
+
         updateEstimatedPrice();
 
         if (isEditMode) {
@@ -134,6 +139,62 @@ public class Service_Req_Activity extends AppCompatActivity {
         }
 
         btnSubmitServiceRequest.setOnClickListener(v -> submitRequest());
+    }
+
+    private void loadDefaultVehicle() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) {
+            return;
+        }
+
+        firestore.collection("users")
+                .document(user.getUid())
+                .get()
+                .addOnSuccessListener(userDocument -> {
+                    if (isFinishing() || isDestroyed()
+                            || !userDocument.exists()) {
+                        return;
+                    }
+
+                    String defaultVehicleId =
+                            userDocument.getString("defaultVehicleId");
+
+                    if (defaultVehicleId == null
+                            || defaultVehicleId.trim().isEmpty()) {
+                        return;
+                    }
+
+                    firestore.collection("users")
+                            .document(user.getUid())
+                            .collection("vehicles")
+                            .document(defaultVehicleId)
+                            .get()
+                            .addOnSuccessListener(vehicleDocument -> {
+                                if (isFinishing() || isDestroyed()
+                                        || !vehicleDocument.exists()) {
+                                    return;
+                                }
+
+                                String vehicleType =
+                                        vehicleDocument.getString("type");
+
+                                if (vehicleType != null
+                                        && !vehicleType.trim().isEmpty()
+                                        && etVehicleType.getText().toString()
+                                        .trim().isEmpty()) {
+
+                                    etVehicleType.setText(vehicleType, false);
+                                    updateEstimatedPrice();
+
+                                    Toast.makeText(
+                                            this,
+                                            "Default vehicle selected",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+                                }
+                            });
+                });
     }
 
     private void prefillRequestAgain() {

@@ -1,8 +1,8 @@
-
 package com.example.roadsideassistance;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -32,6 +33,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -43,29 +45,59 @@ import com.google.firebase.firestore.WriteBatch;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class Profile_Activity extends AppCompatActivity {
 
     EditText name, email, contact, carname, createpassword, confirmpassword;
-    Button btnEditProfile, profileUpdate, btnDeleteProfile, btnLogoutProfile, btnChangePassword;
+
+    Button btnEditProfile, profileUpdate, btnDeleteProfile,
+            btnLogoutProfile, btnChangePassword;
+
     Button btnAddVehicle;
+    Button btnSavePreferences;
+
     TextView txtProfileName, tvNoVehicles;
+    TextView tvRequestCount, tvLastUsed;
+
     ImageView imgProfile;
+
     LinearLayout vehicleListContainer;
+    LinearLayout preferredServiceContainer;
 
     FirebaseAuth auth;
     FirebaseFirestore db;
     SharedPreferences sp;
+
     String uid;
+    String defaultVehicleId = "";
+
+    Set<String> preferredServiceTypes = new LinkedHashSet<>();
 
     private ActivityResultLauncher<String> imagePicker;
     private File profileImageFile;
 
     private final String[] vehicleTypes = {
             "Car", "Bike", "Scooter", "Truck", "Other"
+    };
+
+    private final String[] availableServiceTypes = {
+            "Tow Truck",
+            "Flat Tire Change",
+            "Battery Jumpstart",
+            "Roadside Repair",
+            "Fuel Delivery",
+            "Lockout Service",
+            "Oil Delivery",
+            "General Assistance"
     };
 
     @Override
@@ -86,11 +118,17 @@ public class Profile_Activity extends AppCompatActivity {
         btnLogoutProfile = findViewById(R.id.btnlogoutProfile);
         btnChangePassword = findViewById(R.id.btnChangePassword);
         btnAddVehicle = findViewById(R.id.btnAddVehicle);
+        btnSavePreferences = findViewById(R.id.btnSavePreferences);
 
         txtProfileName = findViewById(R.id.txtProfileName);
         imgProfile = findViewById(R.id.imgProfile);
         tvNoVehicles = findViewById(R.id.tvNoVehicles);
+
         vehicleListContainer = findViewById(R.id.vehicleListContainer);
+        preferredServiceContainer = findViewById(R.id.preferredServiceContainer);
+
+        tvRequestCount = findViewById(R.id.tvRequestCount);
+        tvLastUsed = findViewById(R.id.tvLastUsed);
 
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
@@ -124,7 +162,8 @@ public class Profile_Activity extends AppCompatActivity {
         setEditMode(false);
         loadProfile();
         loadProfilePicture();
-        loadVehicles();
+        loadProfileUsage();
+        loadPreferences();
 
         imgProfile.setOnClickListener(v -> showProfilePictureOptions());
 
@@ -134,6 +173,7 @@ public class Profile_Activity extends AppCompatActivity {
         btnLogoutProfile.setOnClickListener(v -> confirmLogout());
         btnDeleteProfile.setOnClickListener(v -> confirmDelete());
         btnAddVehicle.setOnClickListener(v -> showVehicleDialog(null));
+        btnSavePreferences.setOnClickListener(v -> savePreferences());
     }
 
     private void showProfilePictureOptions() {
@@ -410,6 +450,165 @@ public class Profile_Activity extends AppCompatActivity {
                 });
     }
 
+    private void loadProfileUsage() {
+        tvRequestCount.setText("Loading...");
+        tvLastUsed.setText("Loading...");
+
+        db.collection("serviceRequests")
+                .whereEqualTo("userId", uid)
+                .get()
+                .addOnSuccessListener(querySnapshot ->
+                        tvRequestCount.setText(
+                                String.valueOf(querySnapshot.size())
+                        ))
+                .addOnFailureListener(e -> {
+                    tvRequestCount.setText("Unavailable");
+
+                    Toast.makeText(this,
+                            "Could not load request count: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+
+        db.collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(document -> {
+                    Timestamp lastUsed = document.getTimestamp("lastUsedAt");
+
+                    if (lastUsed != null) {
+                        Date date = lastUsed.toDate();
+
+                        SimpleDateFormat formatter = new SimpleDateFormat(
+                                "dd MMM yyyy, hh:mm a",
+                                Locale.getDefault()
+                        );
+
+                        tvLastUsed.setText(formatter.format(date));
+                    } else {
+                        tvLastUsed.setText("Not available yet");
+                    }
+                })
+                .addOnFailureListener(e ->
+                        tvLastUsed.setText("Unavailable"));
+    }
+
+    private void loadPreferences() {
+        db.collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String savedDefault =
+                                document.getString("defaultVehicleId");
+
+                        defaultVehicleId = savedDefault == null
+                                ? ""
+                                : savedDefault;
+
+                        preferredServiceTypes.clear();
+
+                        List<String> savedServices =
+                                (List<String>) document.get("preferredServiceTypes");
+
+                        if (savedServices != null) {
+                            preferredServiceTypes.addAll(savedServices);
+                        }
+                    }
+
+                    loadPreferredServiceOptions();
+                    loadVehicles();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this,
+                            "Could not load preferences: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+
+                    loadPreferredServiceOptions();
+                    loadVehicles();
+                });
+    }
+
+    private void loadPreferredServiceOptions() {
+        preferredServiceContainer.removeAllViews();
+
+        for (String service : availableServiceTypes) {
+            CheckBox checkBox = new CheckBox(this);
+            checkBox.setText(service);
+            checkBox.setTextSize(15);
+            checkBox.setTextColor(resolveThemeColor(
+                    com.google.android.material.R.attr.colorOnSurface
+            ));
+
+            checkBox.setButtonTintList(
+                    ColorStateList.valueOf(
+                            resolveThemeColor(
+                                    androidx.appcompat.R.attr.colorPrimary
+                            )
+                    )
+            );
+
+            checkBox.setChecked(preferredServiceTypes.contains(service));
+
+            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    preferredServiceTypes.add(service);
+                } else {
+                    preferredServiceTypes.remove(service);
+                }
+            });
+
+            preferredServiceContainer.addView(checkBox);
+        }
+    }
+
+    private void savePreferences() {
+        Map<String, Object> updates = new HashMap<>();
+
+        updates.put(
+                "preferredServiceTypes",
+                new ArrayList<>(preferredServiceTypes)
+        );
+
+        btnSavePreferences.setEnabled(false);
+
+        db.collection("users")
+                .document(uid)
+                .update(updates)
+                .addOnSuccessListener(unused -> {
+                    btnSavePreferences.setEnabled(true);
+
+                    Toast.makeText(this,
+                            "Preferred services saved successfully",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    btnSavePreferences.setEnabled(true);
+
+                    Toast.makeText(this,
+                            "Could not save preferences: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+    }
+
+    private void setDefaultVehicle(String vehicleId) {
+        db.collection("users")
+                .document(uid)
+                .update("defaultVehicleId", vehicleId)
+                .addOnSuccessListener(unused -> {
+                    defaultVehicleId = vehicleId;
+                    loadVehicles();
+
+                    Toast.makeText(this,
+                            "Default vehicle updated successfully",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                "Could not set default vehicle: "
+                                        + e.getMessage(),
+                                Toast.LENGTH_LONG).show());
+    }
+
     private void loadVehicles() {
         db.collection("users")
                 .document(uid)
@@ -434,7 +633,6 @@ public class Profile_Activity extends AppCompatActivity {
                                 "Could not load vehicles: " + e.getMessage(),
                                 Toast.LENGTH_LONG).show());
     }
-
 
     private void showVehicleDialog(DocumentSnapshot vehicle) {
         boolean isEditing = vehicle != null;
@@ -505,9 +703,6 @@ public class Profile_Activity extends AppCompatActivity {
         dialog.show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-
-//            Toast.makeText(this, "Save button clicked", Toast.LENGTH_SHORT).show();
-
             String model = modelInput.getText().toString().trim();
             String number = numberInput.getText().toString()
                     .trim().toUpperCase(Locale.ROOT);
@@ -534,8 +729,6 @@ public class Profile_Activity extends AppCompatActivity {
             );
         });
     }
-
-
 
     private void saveVehicle(
             String vehicleId,
@@ -568,11 +761,10 @@ public class Profile_Activity extends AppCompatActivity {
 
                         loadVehicles();
                     })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this,
-                                "Could not add vehicle: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    });
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this,
+                                    "Could not add vehicle: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show());
         } else {
             db.collection("users")
                     .document(uid)
@@ -588,19 +780,19 @@ public class Profile_Activity extends AppCompatActivity {
 
                         loadVehicles();
                     })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this,
-                                "Could not update vehicle: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                    });
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this,
+                                    "Could not update vehicle: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show());
         }
     }
-
 
     private void addVehicleCard(DocumentSnapshot document) {
         String model = document.getString("model");
         String number = document.getString("number");
         String type = document.getString("type");
+
+        boolean isDefault = document.getId().equals(defaultVehicleId);
 
         CardView card = new CardView(this);
         card.setRadius(dp(14));
@@ -651,6 +843,21 @@ public class Profile_Activity extends AppCompatActivity {
         typeParams.topMargin = dp(3);
         cardContent.addView(typeText, typeParams);
 
+        TextView defaultLabel = new TextView(this);
+        defaultLabel.setText(isDefault ? "✓ DEFAULT VEHICLE" : "");
+        defaultLabel.setTextSize(13);
+        defaultLabel.setTypeface(null, android.graphics.Typeface.BOLD);
+        defaultLabel.setTextColor(resolveThemeColor(
+                androidx.appcompat.R.attr.colorPrimary
+        ));
+
+        LinearLayout.LayoutParams defaultParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        defaultParams.topMargin = dp(6);
+        cardContent.addView(defaultLabel, defaultParams);
+
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.setGravity(Gravity.END);
@@ -660,12 +867,20 @@ public class Profile_Activity extends AppCompatActivity {
         editButton.setTextSize(12);
         editButton.setOnClickListener(v -> showVehicleDialog(document));
 
+        Button defaultButton = new Button(this);
+        defaultButton.setText(isDefault ? "DEFAULT" : "SET DEFAULT");
+        defaultButton.setTextSize(11);
+        defaultButton.setEnabled(!isDefault);
+        defaultButton.setOnClickListener(v ->
+                setDefaultVehicle(document.getId()));
+
         Button deleteButton = new Button(this);
         deleteButton.setText("DELETE");
         deleteButton.setTextSize(12);
         deleteButton.setOnClickListener(v -> confirmDeleteVehicle(document));
 
         buttons.addView(editButton);
+        buttons.addView(defaultButton);
         buttons.addView(deleteButton);
 
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
@@ -693,26 +908,47 @@ public class Profile_Activity extends AppCompatActivity {
                 .setTitle("Delete Vehicle")
                 .setMessage("Are you sure you want to delete "
                         + (model == null ? "this vehicle" : model) + "?")
-                .setPositiveButton("Delete", (dialog, which) ->
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    String vehicleId = vehicle.getId();
+
+                    if (vehicleId.equals(defaultVehicleId)) {
                         db.collection("users")
                                 .document(uid)
-                                .collection("vehicles")
-                                .document(vehicle.getId())
-                                .delete()
+                                .update("defaultVehicleId", "")
                                 .addOnSuccessListener(unused -> {
-                                    loadVehicles();
-
-                                    Toast.makeText(this,
-                                            "Vehicle deleted successfully",
-                                            Toast.LENGTH_SHORT).show();
+                                    defaultVehicleId = "";
+                                    deleteVehicleDocument(vehicleId);
                                 })
                                 .addOnFailureListener(e ->
                                         Toast.makeText(this,
-                                                "Could not delete vehicle: "
+                                                "Could not update default vehicle: "
                                                         + e.getMessage(),
-                                                Toast.LENGTH_LONG).show()))
+                                                Toast.LENGTH_LONG).show());
+                    } else {
+                        deleteVehicleDocument(vehicleId);
+                    }
+                })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private void deleteVehicleDocument(String vehicleId) {
+        db.collection("users")
+                .document(uid)
+                .collection("vehicles")
+                .document(vehicleId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    loadVehicles();
+
+                    Toast.makeText(this,
+                            "Vehicle deleted successfully",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                "Could not delete vehicle: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show());
     }
 
     private int resolveThemeColor(int attribute) {
