@@ -21,6 +21,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +32,18 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
     private final Context context;
     private final List<DocumentSnapshot> requestList;
     private final FirebaseFirestore firestore;
+
+    private final SimpleDateFormat storedDateFormat =
+            new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+    private final SimpleDateFormat displayDateFormat =
+            new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+
+    private final SimpleDateFormat storedTimeFormat =
+            new SimpleDateFormat("HH:mm", Locale.getDefault());
+
+    private final SimpleDateFormat displayTimeFormat =
+            new SimpleDateFormat("hh:mm a", Locale.getDefault());
 
     public MyRequestAdapter(Context context, List<DocumentSnapshot> requestList) {
         this.context = context;
@@ -96,6 +109,35 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         holder.requestLocation.setText("Location: " + location);
         holder.requestStatus.setText(status);
         applyStatusStyle(holder.requestStatus, status);
+
+        String preferredDate = document.getString("preferredDate");
+        String preferredTime = document.getString("preferredTime");
+
+        if (preferredDate != null && !preferredDate.trim().isEmpty()
+                && preferredTime != null && !preferredTime.trim().isEmpty()) {
+
+            try {
+                Date date = storedDateFormat.parse(preferredDate);
+                Date time = storedTimeFormat.parse(preferredTime);
+
+                if (date != null && time != null) {
+                    holder.tvPreferredSchedule.setText(
+                            "Preferred Booking: "
+                                    + displayDateFormat.format(date)
+                                    + " at "
+                                    + displayTimeFormat.format(time)
+                    );
+                    holder.tvPreferredSchedule.setVisibility(View.VISIBLE);
+                } else {
+                    holder.tvPreferredSchedule.setVisibility(View.GONE);
+                }
+            } catch (ParseException e) {
+                holder.tvPreferredSchedule.setVisibility(View.GONE);
+            }
+
+        } else {
+            holder.tvPreferredSchedule.setVisibility(View.GONE);
+        }
 
         Object createdAt = document.get("createdAt");
 
@@ -286,6 +328,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
         TextView requestLocation;
         TextView requestStatus;
         TextView requestDate;
+        TextView tvPreferredSchedule;
         TextView tvEstimatedPrice;
         TextView technicianName;
         TextView technicianPhone;
@@ -308,6 +351,7 @@ public class MyRequestAdapter extends RecyclerView.Adapter<MyRequestAdapter.Requ
             requestLocation = itemView.findViewById(R.id.RequestLocation);
             requestStatus = itemView.findViewById(R.id.RequestStatus);
             requestDate = itemView.findViewById(R.id.RequestDate);
+            tvPreferredSchedule = itemView.findViewById(R.id.tvPreferredSchedule);
             tvFuelType = itemView.findViewById(R.id.tvFuelType);
             tvFuelQuantity = itemView.findViewById(R.id.tvFuelQuantity);
             tvEstimatedPrice = itemView.findViewById(R.id.tvEstimatedPrice);

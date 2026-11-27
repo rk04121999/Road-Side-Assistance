@@ -121,6 +121,54 @@
         </androidx.cardview.widget.CardView>
 
         <LinearLayout
+            android:id="@+id/layoutPreferredSchedule"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Preferred Booking Schedule"
+                android:textColor="#222222"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="Select your preferred date and time for this service."
+                android:textColor="#666666"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnPreferredDate"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="Select Preferred Date"
+                android:textAllCaps="false"
+                android:textColor="#B00000"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/btnPreferredTime"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#FFFFFF"
+                android:text="Select Preferred Time"
+                android:textAllCaps="false"
+                android:textColor="#B00000"
+                android:textSize="15sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/layoutFuelOptions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -97,7 +97,10 @@ public class Profile_Activity extends AppCompatActivity {
             "Fuel Delivery",
             "Lockout Service",
             "Oil Delivery",
-            "General Assistance"
+            "General Assistance",
+            "General Service",
+            "Annual Service",
+            "Inspection"
     };
 
     @Override

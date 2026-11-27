@@ -56,6 +56,10 @@ public class ServicesActivity extends AppCompatActivity {
         addService(R.id.cardOil, "Oil Delivery");
         addService(R.id.cardGeneral, "General Assistance");
 
+        addService(R.id.cardGeneralService, "General Service");
+        addService(R.id.cardAnnualService, "Annual Service");
+        addService(R.id.cardInspection, "Inspection");
+
         loadPreferredServices();
     }
 
@@ -139,7 +143,6 @@ public class ServicesActivity extends AppCompatActivity {
 
         for (ServiceItem item : serviceItems) {
             ViewGroup.LayoutParams params = item.card.getLayoutParams();
-
             servicesGrid.addView(item.card, params);
         }
     }
